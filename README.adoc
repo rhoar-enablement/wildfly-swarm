@@ -1,0 +1,36 @@
+= Red Hat OpenShift Application Runtimes - WildFly Swarm Training
+James Falkner <jfalkner@redhat.com>
+
+:sectnums!:
+:toc: left
+:revnumber: 1.0
+:revdate: 2017-07-12
+
+This repository is the used to develop training materials for Red Hat OpenShift Application Runtimes. This module/lab focuses on http://wildfly-swarm.io/[WildFly Swarm]. The main authors of _{doctitle}_ is *{author}*, Red Hat and the current version ({revnumber}) was last updated on {revdate}.
+
+== Lab Overview
+
+[cols="1,4", options="header"]
+|===
+2+|  Details
+| Technology/Product | Red Hat OpenShift Application Runtimes
+| Difficulty | 2
+| Time | 4 hours
+| Prerequisites | An understanding of Java application development and familiarity with OpenShift and Linux Containers
+|===
+
+
+== Introduction
+
+This is a self-paced lab, aimed at developers using, or wanting to use WildFly Swarm as part of Red Hat OpenShift
+Application Runtimes.
+
+The lab consists of several exercises walking the participant through basic and new features of WildFly Swarm,
+especially as it relates to OpenShift and containerized microservices.
+
+Here is a short list for the available exercises:
+
+* link:lab1/docs/lab1-instructions.adoc[Exercise 1 - Basic Project Structure and Local Developer Workflow]
+* link:lab1/docs/lab1-instructions.adoc[Exercise 2 - Production Deployments to OpenShift using WildFly Swarm]
+* link:lab1/docs/lab1-instructions.adoc[Exercise 3 - Microservice features for Health checks and Configuration Management]
+* link:lab1/docs/lab1-instructions.adoc[Exercise 4 - Additional Fraction features with Swagger and Flyway]

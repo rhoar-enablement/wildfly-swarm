@@ -1,0 +1,323 @@
+:noaudio:
+:scrollbar:
+:data-uri:
+:toc2:
+
+== Lab 2: Deploying to production with OpenShift
+
+In this lab, you will modify the project from the previous lab to add functionality
+related to deploying to different environments (e.g. development, staging, production).
+The goal is to deploy the application to http://openshift.com[OpenShift] and understand how WildFly Swarm and
+OpenShift work together for both the developer and operations personnel.
+
+In addition you will externalize both the configuration and data that drives the application
+using external configuration files and ane external Postgres database.
+
+You will also use the https://maven.fabric8.io/[Fabric8 Maven Plugin], which provides a simplified developer experience
+for both local development and development with OpenShift.
+
+.Requirements
+
+* Knowledge of OpenShift concepts
+* Familiarity with relational databases
+
+:numbered:
+
+== Find lab2 project files
+
+Each lab in this course is housed in separate directories. Using the command line, find and observe
+the files for this lab:
+
+    % cd $HOME/rhoar-enablement/lab2
+
+IMPORTANT: Be sure to replace `$HOME` with the directory you chose to put the content in previous labs.
+
+== Add dependencies for Postgres database
+
+In previous labs you used an in-memory database which gets erased each time the service stops. For production
+use, an external database is preferred in order to maintain data across app restarts. To add support for
+Postgres, open the `pom.xml` file and add the following `<dependency>` in the section just below the `com.h2database`
+dependency specification:
+
+[source, xml]
+<dependency>
+ <groupId>org.postgresql</groupId>
+ <artifactId>postgresql</artifactId>
+ <version>${version.postgresql}</version>
+</dependency>
+
+Next, add the Postgres version near the top of the file in the `<properties>` section:
+
+[source, xml]
+<version.postgresql>9.4.1207</version.postgresql>
+
+This will cause the Postgres driver to be included in your application when it is built.
+
+== Create a new WildFly Swarm Project Stage
+
+WildFly Project Stages allow you to externalize the WildFly Swarm and fraction configuration into a file
+external to your Java source. Recall from the previous lab that the default file in `src/main/resource/project-defaults.yml`
+contained the definition of the JPA Data source which connected the application to its database. In previous
+labs you used the Hypersonic (`h2`) in-memory database. For production use, you will use Postgres. To create
+a new production configuration:
+
+1. Copy the existing `project-defaults.yml` to a new file named `project-production.yml`
+2. Open the file in the IDE and change the `datasources` section to read:
+[source, yaml]
+    data-sources:
+      InventoryDS:
+        driver-name: postgresql
+        connection-url: jdbc:postgresql://inventory-database:5432/inventory
+        user-name: swarm
+        password: password
+
+3. Save the file
+
+CAUTION: YAML files are sensitive to indentation level for each line, so be sure to maintain the indentation
+level found in the original file!
+
+When running WildFly Swarm applications, you can specify which _stage_ you wish to use with the command line,
+system properties, and other mechanisms (see https://wildfly-swarm.gitbooks.io/wildfly-swarm-users-guide/content/v/2017.7.0/configuration/project_stages.html[docs] for details).
+
+The default will continue to use the in-memory `h2` database, so you can continue to run the application locally as needed.
+Later on, when you deploy to OpenShift, the `production` stage will be enabled via a system property.
+
+== Configure the Fabric8 Maven Plugin
+
+Fabric8 is a Red Hat-sponsored project which improves developer experience with microservices. One component of this
+project is the Fabric8 Maven Plugin, which provides a rich set of features for building and deploying microservices
+to OpenShift. You will use this plugin in later sections, but for now you must enable the plugin:
+
+. In the `pom.xml` file, Add a new dependency in the `<dependencyManagement>` section for the Fabric8 BOM (Bill of Materials):
+[source, xml]
+ <dependency>
+     <groupId>io.fabric8</groupId>
+     <artifactId>fabric8-project-bom-with-platform-deps</artifactId>
+     <version>${fabric8.version}</version>
+     <type>pom</type>
+     <scope>import</scope>
+ </dependency>
+
+. Still in `pom.xml`, add a new plugin dependency in the `<build>` -> `<plugins>` section below the WildFly Swarm plugin.
+This dependency also configures the plugin for WildFly Swarm.
+[source, xml]
+<plugin>
+    <groupId>io.fabric8</groupId>
+    <artifactId>fabric8-maven-plugin</artifactId>
+    <version>${fabric8.maven.plugin.version}</version>
+    <executions>
+        <execution>
+            <goals>
+                <goal>resource</goal>
+            </goals>
+        </execution>
+    </executions>
+    <configuration>
+        <generator>
+            <includes>
+                <include>wildfly-swarm</include>
+            </includes>
+        </generator>
+    </configuration>
+</plugin>
+
+. Add version information to the `<properties>` section at the top of the file for both Fabric8 and the Fabric8 Maven Plugin:
+[source, xml]
+<fabric8.version>2.2.205</fabric8.version>
+<fabric8.maven.plugin.version>3.5.1</fabric8.maven.plugin.version>
+
+. Save the file.
+
+== Create a simple Health endpoint
+
+http://openshift.com[OpenShift] is Red Hat's container orchestration platform for deploying applications using Linux Containers at scale.
+It is built on https://kubernetes.io/[Kubernetes], and inherits many of Kubernetes concepts for building and deploying applications. To
+build and deploy projects, several types of objects are created within Kubernetes for build, deployment, networking,
+storage, security, and many more. The purpose of this lab is not to exhaustively learn about OpenShift, rather, just
+enough to be dangerous!
+
+One of the features of OpenShift is the ability to probe applications running within the containers to determine
+if they are healthy and able to accept requests. You will implement a new RESTful health endpoint to serve this
+purpose. This endpoint will be accessed by OpenShift periodically to ensure the service is up and running. If it is
+not, then OpenShift will kill it and start another to take its place.
+
+. Create a new Java class file `HealthEndpoint.java` in `src/main/java/com/redhat/coolstore/rest` with the following content:
+[source, java]
+----
+package com.redhat.coolstore.rest;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+
+@Path("/health")
+public class HealthEndpoint {
+
+    @GET
+    @Path("/")
+    public String check() {
+        return "ok";
+    }
+}
+----
+
+This will enable OpenShift's _readiness probe_ to periodically issue GET requests to `/api/health`. HTTP Response
+codes other than `200` will tell OpenShift the service is no longer healthy, and after a few failures (depending on
+configuration) will kill the pod running the service and start another in its place. In future labs you'll improve on
+this, but for now this simple probe will suffice.
+
+== Understand Fabric8 Deployment Resources for OpenShift
+
+https://fabric8.io[Fabric8] and the https://maven.fabric8.io/[Fabric8 Maven Plugin] enable easy deployment of projects to OpenShift by automating the
+creation of these objects within OpenShift. It provides "zero configuration" and has sensible defaults,
+but for non-trivial projects, additional directives and configuration is needed. For this project, you now have a
+service _and_ a database.
+
+Examine the following files included in this lab in the `src/main/fabric8` directory to understand how Fabric8 uses these files to create the necessary
+resources within OpenShift:
+
+* `inventory-deployment.yml` - This defines the container for the inventory service. It also defines how the container
+lifecycle should be managed, and many other configuration values. In particular, notice in this file we also define
+the WildFly Swarm project stage that should be active via the Java system property `swarm.project.stage`. We will
+re-visit this mechanism in future labs to future externalize the settings from the stage file.
+
+* `inventory-svc.yml` - This defines a software-load-balanced service through which other applications can access
+the inventory service. Through Kubernetes, external consumers (that are running in the same OpenShift cluster or
+project) can access this service using the service name as the hostname, e.g. http://inventory-service:8080. This
+makes consumer code less dependent on changing networking conditions (changing hostnames, changing ports, etc).
+The automatic load balancing is key to many microservice architectures, where stateless services must be able to
+independently scale to multiple replicas. This is handled through Kubernetes.
+
+* `inventory-route.yml` - This allows consumers outside of OpenShift to access the load-balanced service using
+an external DNS name, protocol and well-known and typically unrestricted TCP ports (e.g. 80, 8080, 8443, etc).
+For example, if you wish to access the service from your colleague's desktop, you cannot use the service name,
+you must use this route's hostname.
+
+* `inventory-db-deployment.yml` - The deployment directives for Postgres including the name of the base image,
+port numbers, username/passwords/database name.
+
+* `inventory-db-svc.yml` - The load-balanced service definition for the Postgres database service.
+
+Notice there is no _route_ object for the database. This means that the database will be inaccessible from outside
+the OpenShift cluster. The only externally-facing service will be the inventory service.
+
+When the Fabric8 Maven Plugin runs, these files are processed (along with the building of the application) to cause
+the application and its database to be deployed to OpenShift.
+
+== Login to OpenShift via the CLI
+
+Before you can build and deploy the project you must login to OpenShift via the CLI. As part of this course, you
+should have been given a URL to an OpenShift cluster, along with a username and password to use for the labs. To
+login to the CLI:
+
+[source, bash]
+% oc login https://console.training.rhmw.org:8443 -u USER -p PASS
+
+Be sure to replace `USER` and `PASS` with your supplied credentials and accept any security exceptions (which is never
+a good idea in a production scenario, but is fine for this lab).
+
+You should get a `Login successful` message indicating you've successfully logged in.
+
+== Create a new project
+
+OpenShift separates different projects using the concept of a _project_ (also known as a https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/[Kubernetes Namespace]).
+To house your project and keep it separate from other users, create a new project using your username as part of the project:
+
+[source, bash]
+% oc new-project inventory-userXX
+
+Be sure to replace `userXX` with your username.
+
+NOTE: It is possible to enable a multi-tenant cluster where users can create the same project names across the cluster, but this
+is not enabled for this lab. Consult the https://docs.openshift.org/latest/architecture/additional_concepts/sdn.html[docs] for more detail if interested.
+
+
+== Build and Deploy service to OpenShift
+
+It's time to build and deploy our service along with its database! To build and deploy:
+
+[source, bash]
+% mvn clean package fabric8:build fabric8:deploy
+
+This will cause the following to happen:
+
+- The project is reset (`clean`)
+- The WildFly Swarm Uberjar is built (`package`)
+- A Docker image is built containing the Uberjar and its runtime (Java) and pushed to OpenShift's internal Docker registry (`fabric8:build`)
+- OpenShift objects are created within the OpenShift projcet to deploy the service, postgres, and the associated services and routes (`fabric8:deploy`)
+
+Once this completes, your project should be up and running. OpenShift runs the different components of the project
+in one or more _pods_ which are the unit of runtime deployment and consists of the running containers for the project.
+The Postgres database is running with one _pod_, and the inventory service in another. You'll test it in the following steps.
+
+== Exercise the database
+
+Now that the project is deployed, examine the Postgres database tables to ensure the data was properly populated.
+Remember that the database is not accessible from outside the network, so you must first access a remote shell on
+the OpenShift _pod_ running the database. To discover the pod name:
+
+    % oc get pods --show-all=false
+    NAME                         READY     STATUS    RESTARTS   AGE
+    inventory-1-7905s            1/1       Running   0          1h
+    inventory-database-1-sx3gj   1/1       Running   0          1h
+
+Notice there are two pods (one for the inventory service, one for the database). Copy/paste the name of the database
+pod . In this example the database pod name is `inventory-database-1-sx3gj`. Use it in the next command:
+
+    $ oc rsh inventory-database-1-sx3gj
+    sh-4.2$
+
+This provides a remote Linux shell into the container running the database. To dump the inventory database use the
+`psql` utility (you'll need to type in the password manually when prompted. The password is `password`):
+
+----
+    % psql -h $HOSTNAME --username=$POSTGRESQL_USER -c \
+        'select * from INVENTORY' inventory
+
+    Password for user swarm: password
+
+     itemid |               link                | location | quantity
+    --------+-----------------------------------+----------+----------
+     329299 | http://maps.google.com/?q=Raleigh | Raleigh  |      736
+     329199 | http://maps.google.com/?q=Raleigh | Raleigh  |      512
+     165613 | http://maps.google.com/?q=Raleigh | Raleigh  |      256
+     165614 | http://maps.google.com/?q=Raleigh | Raleigh  |       54
+     165954 | http://maps.google.com/?q=Raleigh | Raleigh  |       87
+     444434 | http://maps.google.com/?q=Raleigh | Raleigh  |      443
+     444435 | http://maps.google.com/?q=Raleigh | Raleigh  |      600
+     444436 | http://maps.google.com/?q=Tokyo   | Tokyo    |      230
+    (8 rows)
+----
+
+Here you can see the data that was populated when the inventory service started.
+
+NOTE: If you do not see any rows in the database, it may be that the service is not yet running or initialized too quickly (more on this later).
+As a workaround, you can re-start the service (not the database) using `oc deploy inventory --latest`
+
+== Exercise the endpoint
+
+To exercise the inventory service from outside of OpenShift, first discover the external hostname:
+
+    % oc get routes
+    NAME        HOST/PORT                             PATH      SERVICES    PORT      TERMINATION   WILDCARD
+    inventory   inventory-foo.apps.127.0.0.1.nip.io             inventory   8080                    None
+
+The hostname of the service will be different depending on your cluster, but in this example the hostname
+is `inventory-foo.apps.127.0.0.1.nip.io`. To exercise the endpoint, use `curl` once again:
+
+    % curl http://inventory-foo.apps.127.0.0.1.nip.io/api/inventory/329299
+    {"itemId":"329299","location":"Florida","quantity":736,"link":"http://maps.google.com/?q=Raleigh"}
+
+Be sure to replace the hostname with your actual hostname from the `oc get routes` command.
+
+NOTE: The output is identical to the previous lab, but now we are using OpenShift and Linux containers.
+This has many benefits for application development that are covered https://www.openshift.com/[elsewhere].
+
+== Undeploy the service
+
+To completely remove the project from OpenShift, use the Fabric8 Maven Plugin:
+
+    % mvn fabric8:undeploy
+
+This will tear down the objects and runtimes from the OpenShift cluster and complete
+the typical developer lifecycle.
+
