@@ -189,7 +189,7 @@ https://wildfly-swarm.gitbooks.io/wildfly-swarm-users-guide/content/getting-star
 
 . Finally, you'll need to define the data source used by the app (this is normally done through your app server, but in this
 case you are running outside of a traditional Java EE App server, so you'll need to define it. Create a new file at
-`src/main/resources/project.defaults.yml` with the following content:
+`src/main/resources/project-defaults.yml` with the following content:
 
 [source, yaml]
 swarm:
