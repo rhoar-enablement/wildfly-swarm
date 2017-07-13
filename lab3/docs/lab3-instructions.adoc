@@ -1,0 +1,480 @@
+:noaudio:
+:scrollbar:
+:data-uri:
+:toc2:
+
+== Lab 3: Configuration Management and Health Checks
+
+In this lab, you will add additional features to the inventory service to integrate it further
+into OpenShift and make it easier to manage. The goals of this lab are:
+
+. Further externalize the service's configuration outside of the app entirely using OpenShift
+https://docs.openshift.org/latest/dev_guide/configmaps.html[ConfigMaps]. This allows configuration
+to be managed and evolved without any rebuilding of the application.
+
+. Understand and implement health checks on the service, to enable OpenShift to more accurately
+manage the service's lifecycle and detect and respond to anomalous events such as application
+crashes or hangs due to various environmental factors.
+
+.Requirements
+
+* Familiarity with Java programming
+* Knowledge of OpenShift concepts
+
+:numbered:
+
+== Find lab3 project files
+
+Each lab in this course is housed in separate directories. Using the command line, find and observe
+the files for this lab:
+
+    % cd $HOME/rhoar-enablement/lab3
+
+IMPORTANT: Be sure to replace `$HOME` with the directory you chose to put the content in previous labs.
+
+== Exercise: Externalized WildFly Swarm Configuration
+
+In this first part of the lab you will further refine the handling of WildFly Swarm configuration. Recall from
+previous labs, you created different configuration files for development vs. production _stages_. This allowed you
+to make changes to the configuration files without touching the source code. However, the files are still part of
+the application and even after making changes to them, a re-build and re-deployment of the application is necessary
+to get those changes into production.
+
+An even better way is to completely remove the production configuration from the application entirely, and allow your
+deployment infrastructure (in this case OpenShift) to manage the configuration changes. Using OpenShift's _ConfigMap_
+feature, you will do exactly this.
+
+It is important for an application’s configuration to be externalized and separate from its code. This allows for the
+application’s configuration to change as it moves through different environments (dev/test/prod) while leaving the code unchanged. This
+also keeps sensitive or internal information out of your codebase and version control.
+
+=== Understand ConfigMaps
+
+ConfigMap is an object used by OpenShift to inject configuration data as simple key and value pairs into one or more
+Linux containers while keeping the those containers agnostic of OpenShift. You can create a ConfigMap object in a
+variety of different ways, including using a YAML file, and inject it into the Linux container. You can find more
+information about ConfigMap in the https://docs.openshift.org/latest/dev_guide/configmaps.html[OpenShift documentation].
+
+ConfigMaps are _mounted_ into a running container, so that the application running in the container sees the content
+as a normal file on the filesystem and can be accessed using ordinary filesystem operations (e.g. using `java.io.File`
+interfaces).
+
+=== Create OpenShift ConfigMap
+
+In this exercise you will create a ConfigMap containing the production configuration for the inventory service, including
+a new configuration value which will be used by the service to change its behavior.
+
+. To create the ConfigMap, create a new YAML file using your IDE at `src/main/fabric8/inventory-configmap.yml` that contains:
+[source, yaml]
+metadata:
+  name: app-config
+data:
+  inventory-config: |
+    project:
+      stage: production
+    swarm:
+      logging: INFO
+      datasources:
+        data-sources:
+          InventoryDS:
+            driver-name: postgresql
+            connection-url: jdbc:postgresql://inventory-database:5432/inventory
+            user-name: swarm
+            password: password
+    stores:
+      closed: Raleigh,Tokyo
+
+. Save the file
+
+Notice it contains a new section starting with `stores:`. This value will be used in the next steps. This file
+also includes the declaration of the name of the stage (`production`) that this configuration represents.
+
+CAUTION: YAML files are sensitive to indentation level for each line, so be sure to maintain the indentation
+as shown here!
+
+This file will be processed by Fabric8 and create an object within OpenShift when the application is deployed.
+
+=== Modify OpenShift Deployment to use ConfigMap
+
+To use the ConfigMap within OpenShift, it is necessary to declare in the DeploymentConfig object for the
+application which ConfigMap to mount, where to mount it, and how to expose its contents.
+
+. Open the `src/main/fabric8/inventory-deployment.yml` file in your IDE
+
+. Starting on line XXX, below the `# Insert Volumes here` comment, add the following lines:
+[source, yaml]
+      # Insert Volumes here
+      volumes:
+        - configMap:
+            name: app-config
+            items:
+            - key: "inventory-config"
+              path: "inventory-config.yml"
+          name: config
+
+WARNING: Be sure that the indentation above is maintained, and that the first line with `volumes:` is in the same
+column as the `# Insert Volumes here` comment!
+
+. Starting on line XXX, below the `# Insert Volume Mounts here` comment, add the following lines:
+[source, yaml]
+        ## Insert Volume Mounts here
+        volumeMounts:
+          - name: config
+            mountPath: /app/config
+
+. Modify the `JAVA_OPTIONS` environment variable on line XXX to read:
+[source, yaml]
+          - name: JAVA_OPTIONS
+            value: "-Dswarm.project.stage=production -Dswarm.project.stage.file=file:///app/config/inventory-config.yml"
+
+The above changes will cause the ConfigMap values to be mounted into the container at runtime at
+`/app/config/inventory-config.yml`, and instruct WildFly Swarm to read it to get its configuration variables.
+
+=== Modify Inventory Service to inject configuration values
+
+Now that the ConfigMap values are read into the WildFly Swarm runtime, you must modify the application to use the value.
+
+In this case you will modify the inventory service to read the "Stores Closed" configuration value, and if a store
+is closed, then return `0` for the inventory count for any product in that store.
+
+. Open `src/main/java/com/redhat/coolstore/rest/InventoryEndpoint.java` and replace the entire contents with this
+new class implementation:
+
+[source,java]
+----
+package com.redhat.coolstore.rest;
+
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+import com.redhat.coolstore.model.Inventory;
+import com.redhat.coolstore.service.InventoryService;
+import org.wildfly.swarm.spi.runtime.annotations.ConfigurationValue;
+
+import java.util.Optional;
+
+@Path("/inventory")
+public class InventoryEndpoint {
+
+    @Inject
+    private InventoryService inventoryService;
+
+    @Inject
+    @ConfigurationValue("stores.closed")
+    private Optional<String> storesClosed;
+
+    @GET
+    @Path("/{itemId}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Inventory getAvailability(@PathParam("itemId") String itemId) {
+        Inventory i = inventoryService.getInventory(itemId);
+        for (String store : storesClosed.orElse("").split(",")) {
+            if (store.equalsIgnoreCase(i.getLocation())) {
+                i.setQuantity(0);
+            }
+        }
+        return i;
+    }
+}
+----
+
+Here we `@Inject` the value of the `stores.closed` configuration value (from the ConfigMap) and then reference it in
+the code which loops through each closed store, and if the item is present in the closed store, override the quantity
+to be `0` indicating the store is closed.
+
+=== Deploy service and inspect ConfigMap
+
+It's time to test out our new code!
+
+. Create a new OpenShift project to house lab3:
+[source, bash]
+% oc new-project lab3-userXX
+
+Be sure to replace `userXX` with your username.
+
+. To re-deploy the application, execute:
+
+[source,bash]
+% mvn clean package fabric8:build fabric8:deploy
+
+. To discover the URL of the route for this lab, execute:
+
+[source, bash]
+% oc get routes
+NAME        HOST/PORT                             PATH      SERVICES    PORT      TERMINATION   WILDCARD
+inventory   inventory-lab3.apps.127.0.0.1.nip.io             inventory   8080                    None
+
+The hostname of the service will be different depending on your cluster, but in this example the hostname
+is `inventory-lab3.apps.127.0.0.1.nip.io`. To exercise the endpoint, use `curl` once again:
+
+    % curl http://inventory-lab3.apps.127.0.0.1.nip.io/api/inventory/329299
+    {"itemId":"329299","location":"Raleigh","quantity":0,"link":"http://maps.google.com/?q=Raleigh"}
+
+Be sure to replace the hostname with your actual hostname from the `oc get routes` command.
+
+Since the store is now closed (by virtue of `Raleigh` appearing in the list of closed stores), you should get:
+
+[source, bash]
+% curl http://inventory-lab3.apps.127.0.0.1.nip.io/api/inventory/329299
+{"itemId":"329299","location":"Raleigh","quantity":0,"link":"http://maps.google.com/?q=Raleigh"}
+
+Notice the `quantity:0`. Our store is now closed in Raleigh!
+
+=== Modify configuration values
+
+Let's exercise the power of ConfigMaps and re-open the store. Until now you've been using the OpenShift CLI (`oc`) to
+make changes to OpenShift. In this exercise, you will use the OpenShift Web Console to edit the ConfigMap.
+
+. Open your favorite browser and navigate to `https://MASTER_HOSTNAME:8443`. Be sure to replace `MASTER_HOSTNAME` with
+the hostname of the OpenShift Web Console hostname issued to you as part of this lab (e.g. `https://console.swarm.rhmw.org:8443`)
+
+. Login with your OpenShift Credentials.
+
+. Once logged in, you will see a list of projects. Click on the `lab3-userXX` project. You'll see pods for both the inventory and inventory-database.
+
+. Navigate to _Resources_ -> _Config Maps_. You should see one entry for the existing ConfigMap named `app-config`:
+
+. Click on the name of the ConfigMap to see details including the values of the configuration items.
+
+. To change the value for the closed stores list, click on _Actions_ -> _Edit_. In the text box, change the value
+for the closed stores to remove `Raleigh`. The final value should simply by `Tokyo`.
+
+. Click Save
+
+. At this point the ConfigMap has been updated, but the service must be restarted for the change to take effect. This
+does not require a re-build, but simply a reboot of the service. Navigate to _Applications_ -> _Deployments_. Click on
+the _inventory_ deployment to get details, and then click the _Deploy_ button to re-deploy.
+
+. Return to the _Overview_ screen to watch the redeployment happen. Once complete, verify the store is now open by
+using the command line once again:
+
+    % curl http://inventory-lab3.apps.127.0.0.1.nip.io/api/inventory/329299
+    {"itemId":"329299","location":"Raleigh","quantity":736,"link":"http://maps.google.com/?q=Raleigh"}%
+
+Success! The store is now open with `quantity:736` items remaining.
+
+== Exercise: WildFly Swarm Health Checks
+
+In this part of the lab you will enhance OpenShift's ability to manage the application lifecycle by implementing
+a _health check pattern_. You may have noticed in previous labs that OpenShift considered the inventory application to be ready to accept service requests
+even before the application was truly ready. This is because OpenShift was not _taught_ how to recognize that our
+app was fully initialized and ready to accept requests.
+
+One of the features of OpenShift is the ability to _probe_ applications. Probing is used to report the liveness and
+readiness or an application. In this use case, you configure an application which exposes an HTTP health endpoint to
+issue HTTP requests. If the container is alive, according to the liveness probe on the health HTTP endpoint, the
+management platform receives `200` as return code and no further action is required. If the health HTTP endpoint does
+not return a response, for example if the JVM is no longer running or a thread is blocked, then the application is
+not considered alive according to the liveness probe. In that case, the platform kills the pod corresponding to that
+application and recreates a new pod to restart the application.
+
+== Add WildFly Swarm Fraction Dependencies
+
+The features implemented in this exercise require a couple of new Fraction dependencies. Open the `pom.xml` and
+add these dependencies starting on line XXX, just below the existing Fraction dependencies:
+
+[source, xml]
+<dependency>
+    <groupId>org.wildfly.swarm</groupId>
+    <artifactId>monitor</artifactId>
+</dependency>
+<dependency>
+    <groupId>org.wildfly.core</groupId>
+    <artifactId>wildfly-controller-client</artifactId>
+    <version>2.2.1.Final</version>
+</dependency>
+
+=== Implement Health Check Endpoint
+
+Create a new RESTful endpoint which will be used by OpenShift to probe our services:
+
+. Create a new file `src/main/java/com/redhat/coolstore/rest/HealthEndpoint.java` with the following content:
+[source,java]
+----
+package com.redhat.coolstore.rest;
+
+import org.jboss.as.controller.client.ModelControllerClient;
+import org.jboss.dmr.ModelNode;
+import org.wildfly.swarm.health.Health;
+import org.wildfly.swarm.health.HealthStatus;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.core.Response;
+import java.net.InetAddress;
+
+@Path("/service")
+public class HealthEndpoint {
+
+    @GET
+    @Health
+    @Path("/health")
+    public HealthStatus health() {
+        ModelNode op = new ModelNode();
+        op.get("address").setEmptyList();
+        op.get("operation").set("read-attribute");
+        op.get("name").set("suspend-state");
+
+        try (ModelControllerClient client = ModelControllerClient.Factory.create(
+                InetAddress.getByName("localhost"), 9990)) {
+            ModelNode response = client.execute(op);
+
+            if (response.has("failure-description")) {
+                throw new Exception(response.get("failure-description").asString());
+            }
+
+            boolean isRunning = response.get("result").asString().equals("RUNNING");
+            if (isRunning) {
+                return HealthStatus.named("server-state").up();
+            } else {
+                return HealthStatus.named("server-state").down();
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @GET
+    @Path("/killme")
+    public Response killme() {
+        ModelNode op = new ModelNode();
+        op.get("address").setEmptyList();
+        op.get("operation").set("suspend");
+
+        try (ModelControllerClient client = ModelControllerClient.Factory.create(
+                InetAddress.getByName("localhost"), 9990)) {
+            ModelNode response = client.execute(op);
+
+            if (response.has("failure-description")) {
+                throw new Exception(response.get("failure-description").asString());
+            }
+
+            return Response.ok(response.get("result").asString()).build();
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+}
+----
+
+The `health()` method exposes an HTTP GET endpoint which will return the status of the service using WildFly's
+built-in APIs. It is annotated with WildFly Swarm's `@Health` annotation, which directs WildFly Swarm to expose
+this endpoint as a health check at `/health`.
+
+The `killme()` method exposes another HTTP GET endpoint which will simulate the service being killed or taken offline.
+Once this endpoint is called, our service will no longer function. We will use this to exercise the functionality of
+WildFly Swarm and OpenShift probes.
+
+=== Modify OpenShift Deployment to use Health Check
+
+To instruct OpenShift on how to use this new health endpoint, modify the DeploymentConfig for the service to add in
+a declaration of the probes:
+
+. Open `src/main/fabric8/inventory-deployment.yml`
+
+. At line XXX, below the comment `Insert health probes here`, add the following YAML snippet. As usual, take care to
+maintain indentation and line up the new code with the comment:
+[source, yaml]
+        # Insert health probes here
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+            scheme: HTTP
+          failureThreshold: 3
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 1
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+            scheme: HTTP
+          failureThreshold: 2
+          initialDelaySeconds: 60
+          periodSeconds: 3
+          successThreshold: 1
+          timeoutSeconds: 1
+
+=== Deploy service and test Health Checks
+
+With the health check in place, it's time to test it out. First, re-deploy the project:
+
+[source,bash]
+% mvn clean package fabric8:build fabric8:deploy
+
+Once the project is deployed, you should be able to access the health check (be sure to replace the hostname
+with your service's correct hostname):
+
+[source, json]
+% curl http://inventory-lab3.apps.127.0.0.1.nip.io/health
+{
+  "checks": [
+    {
+      "id": "server-state",
+      "result": "UP"
+    }
+  ],
+  "outcome": "UP"
+}
+
+
+=== Kill the Service
+
+Let's kill the service. Before killing it, open up the OpenShift Web Console to your project's "Overview" page to witness
+the killing and resurrection of the service.
+
+With the Web Console open, go ahead and kill the service by accessing the previously-created _killme_ endpoint:
+
+[source, bash]
+% curl http://inventory-lab3.apps.127.0.0.1.nip.io/api/service/killme
+undefined
+
+Moments after the service is killed, OpenShift will notice this because its health probes will begin to fail. You'll
+notice that the dark blue circle representing the pod turns light-blue, indicating it's unready. While it's unready,
+attempt to access the service and witness its failure:
+
+[source, bash]
+% curl http://inventory-lab3.apps.127.0.0.1.nip.io/api/service/killme
+<html><head><title>Error</title></head><body>503 - Service Unavailable</body></html>
+
+Accessing the health endpoint:
+
+[source, bash]
+% curl http://inventory-lab3.apps.127.0.0.1.nip.io/health
+{
+  "checks": [
+    {
+      "id": "/api/service/health",
+      "result": "DOWN",
+      "data": {
+        "status-code": 503
+      }
+    }
+  ],
+  "outcome": "DOWN"
+}
+
+After a few more moments, OpenShift will decide the service is no longer viable, and the pod and container in which
+it is running is killed. OpenShift will then instantiate a new pod in its place. After the resurrection, attempt
+once again!
+
+NOTE: If you wait too long when verifying the death of the service, OpenShift might have a chance to resurrect before
+you can verify. You can just try again with the _killme_ endpoint if you really want to see it behave as shown.
+
+Once it's been resurrected, attempt once more to access the service:
+
+[source, bash]
+% curl http://inventory-lab3.apps.127.0.0.1.nip.io/api/inventory/329299
+{"itemId":"329299","location":"Raleigh","quantity":736,"link":"http://maps.google.com/?q=Raleigh"}
+
+It's back! OpenShift will do its best to keep as many copies of the app running as has been instructed (in this case
+1 copy).
+
