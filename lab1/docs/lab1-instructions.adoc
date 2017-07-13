@@ -15,7 +15,17 @@ image:images/rhoar.png[WildFly Swarm Logo]
 .Requirements
 
 * Knowledge of Java language
-* Familiarity with Java EE
+* Familiarity with Java EE and OpenShift
+* Basic Linux/Unix shell script knowledge
+* Developer environment with a modern web browser, Git, Maven, a text editor or IDE, and the OpenShift `oc` command line utility
+
+.Conventions
+
+- Commands that you execute in the Linux shell are preceeded by a `%` character. Do not include this when you are typing
+or copying/pasting the commands.
+- Hostnames, usernames and passwords, and OpenShift resource names will be different for each participant. Take care
+to substitute the correct values for your environment when doing the exercises.
+- Screenshots may differ slightly from actual product.
 
 :numbered:
 
@@ -108,11 +118,11 @@ The Maven POM file `pom.xml` defines the structure of the project and how to bui
 WildFly Swarm projects use a plugin designed for WildFly Swarm, aptly named the https://wildfly-swarm.gitbooks.io/wildfly-swarm-users-guide/content/getting-started/tooling/maven-plugin.html[WildFly Swarm Maven Plugin].
 The major components of the POM file include:
 
-* `<project>` - Identifiers and descriptions of the project
-* `<properties>` - Maven diretives and project values (such as versions) referenced later in the POM file
-* `<dependencyManagement>` - Reusable dependency definitions. Here we bring in WildFly components based on version for use later on
-* `<build>` - Directives for building the project. Here we define the use of the WildFly Swarm Maven Plugin.
-* `<dependencies>` - Defines the needed components for our WF Swarm app. Here we declare our project needs JAX-RS, JPA, EJB, CDI, and Data Sources functionality.
+`<project>`:: Identifiers and descriptions of the project
+`<properties>`:: Maven directives and project values (such as versions) referenced later in the POM file
+`<dependencyManagement>`:: Reusable dependency definitions. Here we bring in WildFly components based on version for use later on
+`<build>`:: Directives for building the project. Here we define the use of the WildFly Swarm Maven Plugin.
+`<dependencies>`:: Defines the needed components for our WF Swarm app. Here we declare our project needs JAX-RS, JPA, EJB, CDI, and Data Sources functionality.
 
 Later on you will add additional elements to the POM file, but for now this is rather simple.
 

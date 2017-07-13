@@ -128,43 +128,6 @@ This dependency also configures the plugin for WildFly Swarm.
 
 . Save the file.
 
-== Create a simple Health endpoint
-
-http://openshift.com[OpenShift] is Red Hat's container orchestration platform for deploying applications using Linux Containers at scale.
-It is built on https://kubernetes.io/[Kubernetes], and inherits many of Kubernetes concepts for building and deploying applications. To
-build and deploy projects, several types of objects are created within Kubernetes for build, deployment, networking,
-storage, security, and many more. The purpose of this lab is not to exhaustively learn about OpenShift, rather, just
-enough to be dangerous!
-
-One of the features of OpenShift is the ability to probe applications running within the containers to determine
-if they are healthy and able to accept requests. You will implement a new RESTful health endpoint to serve this
-purpose. This endpoint will be accessed by OpenShift periodically to ensure the service is up and running. If it is
-not, then OpenShift will kill it and start another to take its place.
-
-. Create a new Java class file `HealthEndpoint.java` in `src/main/java/com/redhat/coolstore/rest` with the following content:
-[source, java]
-----
-package com.redhat.coolstore.rest;
-
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-
-@Path("/health")
-public class HealthEndpoint {
-
-    @GET
-    @Path("/")
-    public String check() {
-        return "ok";
-    }
-}
-----
-
-This will enable OpenShift's _readiness probe_ to periodically issue GET requests to `/api/health`. HTTP Response
-codes other than `200` will tell OpenShift the service is no longer healthy, and after a few failures (depending on
-configuration) will kill the pod running the service and start another in its place. In future labs you'll improve on
-this, but for now this simple probe will suffice.
-
 == Understand Fabric8 Deployment Resources for OpenShift
 
 https://fabric8.io[Fabric8] and the https://maven.fabric8.io/[Fabric8 Maven Plugin] enable easy deployment of projects to OpenShift by automating the
@@ -175,27 +138,27 @@ service _and_ a database.
 Examine the following files included in this lab in the `src/main/fabric8` directory to understand how Fabric8 uses these files to create the necessary
 resources within OpenShift:
 
-* `inventory-deployment.yml` - This defines the container for the inventory service. It also defines how the container
+`inventory-deployment.yml`:: This defines the container for the inventory service. It also defines how the container
 lifecycle should be managed, and many other configuration values. In particular, notice in this file we also define
 the WildFly Swarm project stage that should be active via the Java system property `swarm.project.stage`. We will
 re-visit this mechanism in future labs to future externalize the settings from the stage file.
 
-* `inventory-svc.yml` - This defines a software-load-balanced service through which other applications can access
+`inventory-svc.yml`:: This defines a software-load-balanced service through which other applications can access
 the inventory service. Through Kubernetes, external consumers (that are running in the same OpenShift cluster or
 project) can access this service using the service name as the hostname, e.g. http://inventory-service:8080. This
 makes consumer code less dependent on changing networking conditions (changing hostnames, changing ports, etc).
 The automatic load balancing is key to many microservice architectures, where stateless services must be able to
 independently scale to multiple replicas. This is handled through Kubernetes.
 
-* `inventory-route.yml` - This allows consumers outside of OpenShift to access the load-balanced service using
+`inventory-route.yml`:: This allows consumers outside of OpenShift to access the load-balanced service using
 an external DNS name, protocol and well-known and typically unrestricted TCP ports (e.g. 80, 8080, 8443, etc).
 For example, if you wish to access the service from your colleague's desktop, you cannot use the service name,
 you must use this route's hostname.
 
-* `inventory-db-deployment.yml` - The deployment directives for Postgres including the name of the base image,
+`inventory-db-deployment.yml`:: The deployment directives for Postgres including the name of the base image,
 port numbers, username/passwords/database name.
 
-* `inventory-db-svc.yml` - The load-balanced service definition for the Postgres database service.
+`inventory-db-svc.yml`:: The load-balanced service definition for the Postgres database service.
 
 Notice there is no _route_ object for the database. This means that the database will be inaccessible from outside
 the OpenShift cluster. The only externally-facing service will be the inventory service.
@@ -223,7 +186,7 @@ OpenShift separates different projects using the concept of a _project_ (also kn
 To house your project and keep it separate from other users, create a new project using your username as part of the project:
 
 [source, bash]
-% oc new-project inventory-userXX
+% oc new-project lab2-userXX
 
 Be sure to replace `userXX` with your username.
 
@@ -299,12 +262,12 @@ To exercise the inventory service from outside of OpenShift, first discover the 
 
     % oc get routes
     NAME        HOST/PORT                             PATH      SERVICES    PORT      TERMINATION   WILDCARD
-    inventory   inventory-foo.apps.127.0.0.1.nip.io             inventory   8080                    None
+    inventory   inventory-lab2.apps.127.0.0.1.nip.io             inventory   8080                    None
 
 The hostname of the service will be different depending on your cluster, but in this example the hostname
-is `inventory-foo.apps.127.0.0.1.nip.io`. To exercise the endpoint, use `curl` once again:
+is `inventory-lab2.apps.127.0.0.1.nip.io`. To exercise the endpoint, use `curl` once again:
 
-    % curl http://inventory-foo.apps.127.0.0.1.nip.io/api/inventory/329299
+    % curl http://inventory-lab2.apps.127.0.0.1.nip.io/api/inventory/329299
     {"itemId":"329299","location":"Florida","quantity":736,"link":"http://maps.google.com/?q=Raleigh"}
 
 Be sure to replace the hostname with your actual hostname from the `oc get routes` command.
