@@ -272,7 +272,7 @@ not return a response, for example if the JVM is no longer running or a thread i
 not considered alive according to the liveness probe. In that case, the platform kills the pod corresponding to that
 application and recreates a new pod to restart the application.
 
-== Add WildFly Swarm Fraction Dependencies
+=== Add WildFly Swarm Fraction Dependencies
 
 The features implemented in this exercise require a couple of new Fraction dependencies. Open the `pom.xml` and
 add these dependencies starting on line XXX, just below the existing Fraction dependencies:
