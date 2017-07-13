@@ -381,6 +381,7 @@ a declaration of the probes:
 
 . At line XXX, below the comment `Insert health probes here`, add the following YAML snippet. As usual, take care to
 maintain indentation and line up the new code with the comment:
+
 [source, yaml]
         # Insert health probes here
         readinessProbe:

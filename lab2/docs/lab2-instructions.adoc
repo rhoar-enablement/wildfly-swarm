@@ -55,13 +55,13 @@ This will cause the Postgres driver to be included in your application when it i
 
 == Create a new WildFly Swarm Project Stage
 
-WildFly Project Stages allow you to externalize the WildFly Swarm and fraction configuration into a file
-external to your Java source. Recall from the previous lab that the default file in `src/main/resource/project-defaults.yml`
-contained the definition of the JPA Data source which connected the application to its database. In previous
-labs you used the Hypersonic (`h2`) in-memory database. For production use, you will use Postgres. To create
-a new production configuration:
+https://reference.wildfly-swarm.io/v/2017.7.0/configuration.html[WildFly Project Stages] allow you to externalize the WildFly Swarm and fraction configuration into a file
+external to your Java source. In this project you'll find the default file in `src/main/resource/project-defaults.yml`
+containing the definition of the JPA Data source which connected the application to its database. This represents
+the configuration that developers will use when running locally, and uses the Hypersonic (`h2`) in-memory database.
+For production use, you will use Postgres. To create a new production configuration:
 
-1. Copy the existing `project-defaults.yml` to a new file named `project-production.yml`
+1. Copy the existing `project-defaults.yml` to a new file named `project-production.yml` in the same directory
 2. Open the file in the IDE and change the `datasources` section to read:
 [source, yaml]
     data-sources:

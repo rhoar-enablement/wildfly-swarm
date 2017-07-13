@@ -5,8 +5,8 @@
 
 == Lab 1: Your first WildFly Swarm Project
 
-In this lab, you will examine an existing WildFly Swarm Java project, understand its structure,
-and use the WildFly Maven Plugin to run the project. The following labs will introduce you to
+In this lab, you will take an *existing* Java EE application and modify it to create your first WildFly Swarm Java
+application, understand its structure, and use the WildFly Maven Plugin to build and run the project. Later labs will introduce you to
 OpenShift and containerized microservices.
 
 image:images/swarm_logo_final.png[WildFly Swarm Logo]
@@ -64,7 +64,7 @@ of this first project are laid out in different subdirectories according to Mave
 
 * `src/main/java` - The source code to the project
 * `src/main/resources` - The static resource files referenced in the code
-* `lab1-instructions.adoc` - This file
+* `docs/lab1-instructions.adoc` - This file
 * `pom.xml` - The Maven project file
 
 TIP: WildFly Swarm projects can also be managed using other tools besides Maven, such as Gradle, JBoss Forge, or Swarmtool.
@@ -72,7 +72,7 @@ Consult the https://wildfly-swarm.gitbooks.io/wildfly-swarm-users-guide/content/
 
 == Examine the Project
 
-This project implements a simple RESTful microservice which implements a retail store inventory service.
+This is a minimal Java EE project which implements a simple RESTful microservice which implements a retail store inventory service.
 The major components of the service within the `src/main/java/com/redhat/coolstore` directory are:
 
 * `model/` - The data model for an inventory item, represented as POJOs (Plain old Java Objects)
@@ -81,13 +81,7 @@ The major components of the service within the `src/main/java/com/redhat/coolsto
 
 Within the `resources/` subdirectory are:
 
-* `project-defaults.yml` - WildFly Swarm configuration file
 * `META-INF/*` - JPA-related files defining database structure and initialization
-
-TIP: The `project-defaults.yml` file is a YAML file that externalizes the runtime environment.
-For example, you may want to run the same project using a different database (one for testing,
-one for production). This file enables you to reconfigure the application without changing its source
-code. More information can be found in the https://reference.wildfly-swarm.io/v/2017.7.0/configuration.html[WildFly Swarm documentation].
 
 == Examine the REST endpoint
 
@@ -110,24 +104,142 @@ Then within `InventoryEndpoint.java` a single endpoint is defined:
 
 Combining these two definitions results in an endpoint that can be accessed via an HTTP GET request.
 For example: _GET /api/inventory/329299_ to retrieve the inventory count for a product identified
-by _329299_.
+by _329299_. You will do this many times in later labs.
 
 == Examine the Maven POM file
 
-The Maven POM file `pom.xml` defines the structure of the project and how to build and run it.
-WildFly Swarm projects use a plugin designed for WildFly Swarm, aptly named the https://wildfly-swarm.gitbooks.io/wildfly-swarm-users-guide/content/getting-started/tooling/maven-plugin.html[WildFly Swarm Maven Plugin].
-The major components of the POM file include:
+The Maven POM file `pom.xml` defines the structure of the project and how to build and run it. The major components of the POM file include:
 
 `<project>`:: Identifiers and descriptions of the project
 `<properties>`:: Maven directives and project values (such as versions) referenced later in the POM file
-`<dependencyManagement>`:: Reusable dependency definitions. Here we bring in WildFly components based on version for use later on
-`<build>`:: Directives for building the project. Here we define the use of the WildFly Swarm Maven Plugin.
-`<dependencies>`:: Defines the needed components for our WF Swarm app. Here we declare our project needs JAX-RS, JPA, EJB, CDI, and Data Sources functionality.
+`<build>`:: Directives for building the project.
+`<dependencies>`:: Defines the needed components for the app. The example app we start with simply contains a Java EE
+dependency, and once built can be deployed to any Java EE app server.
 
 Later on you will add additional elements to the POM file, but for now this is rather simple.
 
-NOTE: In this lab, we are explicitly declaring the Swarm _Fractions_ necessary for our project in the `<dependencies>` section. WildFly Swarm can
-also auto-detect these dependencies, which can be useful for existing Java EE apps you are migrating to WildFly Swarm.
+== Build the (non-WildFly Swarm) Java EE project
+
+To build the project, use Maven:
+
+    % mvn clean package
+
+This command will delete any previous builds and re-package the project into a standard Java EE web archive
+(a `.war` file). You should get a `BUILD SUCCESS` message (if you do not, your build failed). Once built,
+the resulting war is located in the `target/` directory:
+
+    % ls target/*.war
+    target/inventory-1.0.0-SNAPSHOT.war
+
+This is a standard Java EE web app that could be deployed to any Java EE app server (for example,
+https://www.redhat.com/en/technologies/jboss-middleware/application-platform[JBoss EAP], or
+its upstream http://wildfly.org/[WildFly] project).
+
+WildFly Swarm offers an innovative approach to packaging and running Java EE applications by packaging them with
+just enough of the server runtime to "java -jar" your application. It's MicroProfile compatible, too. And,
+it's all much, much cooler than that, which you'll soon discover. Let's convert our app to use it!
+
+== Getting started with WildFly Swarm
+
+In many cases (and in this case) you have an existing Java EE application that you want to convert to a WildFly Swarm
+app. The easiest way to get started is to simply add in the WildFly Swarm dependencies and let it auto-detect which
+_fractions_ (app server components and libraries) it needs, resulting in an _Uberjar_ containing your app and the
+dependencies it needs.
+
+To build an initial WildFly Swarm app:
+
+. Open the `pom.xml` file
+
+. Just after the `<properties>` section, add a new `<dependencyManagement>` section:
+
+[source, xml]
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.wildfly.swarm</groupId>
+        <artifactId>bom-all</artifactId>
+        <version>${version.wildfly.swarm}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+. Within the `<build>` section, add in the
+https://wildfly-swarm.gitbooks.io/wildfly-swarm-users-guide/content/getting-started/tooling/maven-plugin.html[WildFly Swarm Maven Plugin]:
+
+[source, xml]
+  <plugin>
+    <groupId>org.wildfly.swarm</groupId>
+    <artifactId>wildfly-swarm-plugin</artifactId>
+    <version>${version.wildfly.swarm}</version>
+    <executions>
+      <execution>
+        <goals>
+          <goal>package</goal>
+        </goals>
+      </execution>
+    </executions>
+  </plugin>
+
+. Within the `<properties>` section near the top, add in the version:
+
+[source, xml]
+    <version.wildfly.swarm>2017.7.0</version.wildfly.swarm>
+
+. Finally, you'll need to define the data source used by the app (this is normally done through your app server, but in this
+case you are running outside of a traditional Java EE App server, so you'll need to define it. Create a new file at
+`src/main/resources/project.defaults.yml` with the following content:
+
+[source, yaml]
+swarm:
+  logging: INFO
+  datasources:
+    data-sources:
+      InventoryDS:
+        driver-name: h2
+        connection-url: jdbc:h2:mem:inventory;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+        user-name: sa
+        password: sa
+
+This file is a YAML file that externalizes the runtime environment.
+For example, you may want to run the same project using a different database (one for testing,
+one for production). This file enables you to reconfigure the application without changing its source
+code. More information can be found in the https://reference.wildfly-swarm.io/v/2017.7.0/configuration.html[WildFly Swarm documentation].
+We'll re-visit this in later exercises.
+
+With all that done, it's time to run your first WildFly Swarm Uberjar:
+
+[source, bash]
+$ mvn clean package
+
+You'll see several lines of output, and see that WildFly Swarm will auto-detect the necessary components needed to run the app later:
+
+[source]
+[INFO] Detected fractions: cdi:2017.7.0, ejb:2017.7.0, jaxrs:2017.7.0, jpa:2017.7.0
+
+After a `BUILD SUCCESS`, in addition to the `.war` file, WildFly Swarm creates an `Uberjar`:
+
+[source, bash]
+% ls target/*.jar
+target/inventory-1.0.0-SNAPSHOT-swarm.jar
+
+This file contains our project along with the necessary runtime to execute it. Let's run the project using plain Java:
+
+[source, bash]
+% java -jar target/inventory-1.0.0-SNAPSHOT-swarm.jar
+
+You'll see a lot of output, including the _fractions_ that were loaded and output from the various
+fractions as they startup. If successful, you should see:
+
+    2017-07-12 08:37:28,615 INFO  [org.wildfly.swarm] (main) WFSWARM99999: WildFly Swarm is Ready
+
+This is your indication that the project is now running and ready to accept requests.
+
+NOTE: In addition to using `java -jar` to run the project, you can equally use the Maven plugin.
+For example, `mvn wildfly-swarm:run`. There are a number of features of the plugin that can be used
+with WildFly Swarm to ease the developer burden of remembering complex command lines. See more information
+in the https://wildfly-swarm.gitbooks.io/wildfly-swarm-users-guide/content/v/2017.7.0/getting-started/tooling/maven-plugin.html[docs].
 
 [TIP]
 ====
@@ -143,36 +255,6 @@ Some projects may only wish to reference a subset (for example `bom-stable`) to 
 fractions. See more information in the https://howto.wildfly-swarm.io/v/2017.7.0/use-a-bom/[docs].
 ====
 
-== Build and run the project
-
-Let's exercise our first WildFly Swarm project! To build the project, use Maven:
-
-    % mvn clean package
-
-This command will delete any previous builds and re-package the project into a https://wildfly-swarm.gitbooks.io/wildfly-swarm-users-guide/content/getting-started/basics.html[WildFly Swarm Uberjar].
-You should get a `BUILD SUCCESS` message (if you do not, your build failed). Once built,
-the resulting Uberjar is located in the `target/` directory:
-
-    % ls target/*swarm.jar
-    target/inventory-1.0.0-SNAPSHOT-swarm.jar
-
-This file contains our project along with the necessary runtime to execute it.
-Let's run the project using plain Java:
-
-    % java -jar target/inventory-1.0.0-SNAPSHOT-swarm.jar
-
-You'll see a lot of output, including the _fractions_ that were loaded and output from the various
-fractions as they startup. If successful, you should see:
-
-    2017-07-12 08:37:28,615 INFO  [org.wildfly.swarm] (main) WFSWARM99999: WildFly Swarm is Ready
-
-This is your indication that the project is now running and ready to accept requests.
-
-NOTE: In addition to using `java -jar` to run the project, you can equally use the Maven plugin.
-For example, `mvn wildfly-swarm:run`. There are a number of features of the plugin that can be used
-with WildFly Swarm to ease the developer burden of remembering complex command lines. See more information
-in the https://wildfly-swarm.gitbooks.io/wildfly-swarm-users-guide/content/v/2017.7.0/getting-started/tooling/maven-plugin.html[docs].
-
 == Test the REST endpoint
 
 At this point, you should be able to access the RESTful endpoint. Let's test it out using _curl_:
@@ -183,13 +265,83 @@ At this point, you should be able to access the RESTful endpoint. Let's test it 
 
 The RESTful endpoint returned a JSON object representing the inventory count for this product. Congratulations!
 
-TIP: You can also access this in your browser using the same URL!
+Stop the service by pressing CTRL-C in the terminal window.
+
+== Explicitly Declare Dependencies
+
+In some cases, autodetection will fail to detect some dependencies depending on which fractions you need. Longer term,
+it may make sense for you to maintain an explicit list of the fractions you need. In this exercise, you will add in
+the specific dependencies. In this example app, we are using a small set of Java EE features, and will need fractions
+for them.
+
+. Replace the `<dependencies>` section with the following content:
+
+[source, xml]
+----
+  <dependencies>
+
+    <dependency>
+      <groupId>org.wildfly.swarm</groupId>
+      <artifactId>jaxrs</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.wildfly.swarm</groupId>
+      <artifactId>cdi</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.wildfly.swarm</groupId>
+      <artifactId>ejb</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.wildfly.swarm</groupId>
+      <artifactId>jpa</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.wildfly.swarm</groupId>
+      <artifactId>datasources</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <version>${version.h2}</version>
+    </dependency>
+
+  </dependencies>
+----
+
+By declaring explicit fractions, WildFly Swarm will not attempt to auto-detect. In addition, since we've removed
+the Java EE API dependency, modern Java IDEs will be able to detect missing fractions when you're developing new code.
+
+. Next, re-build the application:
+
+[source, bash]
+$ mvn clean package
+
+And re-run the project:
+
+[source, bash]
+% java -jar target/inventory-1.0.0-SNAPSHOT-swarm.jar
+
+And re-exercise the RESTful endpoint:
+
+[source, json]
+% curl http://localhost:8080/api/inventory/329299
+{"itemId":"329299","location":"Raleigh","quantity":736,"link":"http://maps.google.com/?q=Raleigh"}
+
+The resulting Uberjar will most likely be virtually identical, as the fractions we are using have good autodetection functionality,
+and were detected earlier as well as being explicitly included now.
 
 == Stop the service
 
 To stop the service, simply press CTRL-C in the terminal window where the service is executing.
 
 CAUTION: Be careful to not leave services running that you are no longer using in this course, as port conflicts may arise later on.
+
 
 
 

@@ -23,14 +23,51 @@ spec:
         - name: JAVA_APP_DIR
           value: /deployments
         - name: JAVA_OPTIONS
-          value: -Dswarm.project.stage=production
+          value: "-Dswarm.project.stage=production -Dswarm.project.stage.file=file:///app/config/inventory-config.yml"
 
         ## Insert Volume Mounts here
-
-        ## Insert health probes here
+        volumeMounts:
+          - name: config
+            mountPath: /app/config
+        name: inventory
+        image: inventory:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        securityContext:
+          privileged: false
+        # Insert health probes here
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+            scheme: HTTP
+          failureThreshold: 3
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 1
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+            scheme: HTTP
+          failureThreshold: 2
+          initialDelaySeconds: 60
+          periodSeconds: 3
+          successThreshold: 1
+          timeoutSeconds: 1
 
       ## Insert Volumes here
-
+      volumes:
+        - configMap:
+            name: app-config
+            items:
+            - key: "inventory-config"
+              path: "inventory-config.yml"
+          name: config
   triggers:
   - type: ConfigChange
   - imageChangeParams:
