@@ -293,6 +293,7 @@ add these dependencies starting on line XXX, just below the existing Fraction de
 Create a new RESTful endpoint which will be used by OpenShift to probe our services:
 
 . Create a new file `src/main/java/com/redhat/coolstore/rest/HealthEndpoint.java` with the following content:
+
 [source,java]
 ----
 package com.redhat.coolstore.rest;
