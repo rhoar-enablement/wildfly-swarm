@@ -1,0 +1,17 @@
+metadata:
+  name: app-config
+data:
+  inventory-config: |
+    project:
+      stage: production
+    swarm:
+      logging: INFO
+      datasources:
+        data-sources:
+          InventoryDS:
+            driver-name: postgresql
+            connection-url: jdbc:postgresql://inventory-database:5432/inventory
+            user-name: swarm
+            password: password
+    stores:
+      closed: Raleigh,Tokyo
