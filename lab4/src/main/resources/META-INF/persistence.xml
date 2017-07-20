@@ -7,12 +7,7 @@
   <persistence-unit name="InventoryPU" transaction-type="JTA">
     <jta-data-source>java:/jboss/datasources/InventoryDS</jta-data-source>
     <properties>
-      <!--<property name="javax.persistence.schema-generation.database.action" value="none"/>-->
-      <property name="javax.persistence.schema-generation.database.action" value="drop-and-create"/>
-      <property name="javax.persistence.schema-generation.create-source" value="metadata"/>
-      <property name="javax.persistence.schema-generation.drop-source" value="metadata"/>
-      <property name="javax.persistence.sql-load-script-source" value="META-INF/load.sql"/>
-      <property name = "hibernate.show_sql" value = "true" />
+      <property name="javax.persistence.schema-generation.database.action" value="none"/>
     </properties>
   </persistence-unit>
 </persistence>
