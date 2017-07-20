@@ -29,6 +29,8 @@ spec:
         volumeMounts:
           - name: config
             mountPath: /app/config
+
+
         name: inventory
         image: inventory:latest
         imagePullPolicy: IfNotPresent
@@ -38,6 +40,7 @@ spec:
           protocol: TCP
         securityContext:
           privileged: false
+
         # Insert health probes here
         readinessProbe:
           httpGet:
@@ -60,6 +63,7 @@ spec:
           successThreshold: 1
           timeoutSeconds: 1
 
+
       ## Insert Volumes here
       volumes:
         - configMap:
@@ -68,6 +72,8 @@ spec:
             - key: "inventory-config"
               path: "inventory-config.yml"
           name: config
+
+
   triggers:
   - type: ConfigChange
   - imageChangeParams:
