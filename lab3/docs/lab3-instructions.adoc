@@ -101,7 +101,7 @@ application which ConfigMap to mount, where to mount it, and how to expose its c
 
 . Open the `src/main/fabric8/inventory-deployment.yml` file in your IDE
 
-. Starting on line XXX, below the `# Insert Volumes here` comment, add the following lines:
+. Below the `# Insert Volumes here` comment, add the following lines:
 [source, yaml]
       # Insert Volumes here
       volumes:
@@ -115,17 +115,19 @@ application which ConfigMap to mount, where to mount it, and how to expose its c
 WARNING: Be sure that the indentation above is maintained, and that the first line with `volumes:` is in the same
 column as the `# Insert Volumes here` comment!
 
-. Starting on line XXX, below the `# Insert Volume Mounts here` comment, add the following lines:
+. Below the `# Insert Volume Mounts here` comment, add the following lines:
 [source, yaml]
         ## Insert Volume Mounts here
         volumeMounts:
           - name: config
             mountPath: /app/config
 
-. Modify the `JAVA_OPTIONS` environment variable on line XXX to read:
+. Modify the `JAVA_OPTIONS` environment variable value (search for `JAVA_OPTIONS` to find it). Set it to this value:
 [source, yaml]
           - name: JAVA_OPTIONS
             value: "-Dswarm.project.stage=production -Dswarm.project.stage.file=file:///app/config/inventory-config.yml"
+
+. Save the files(s)
 
 The above changes will cause the ConfigMap values to be mounted into the container at runtime at
 `/app/config/inventory-config.yml`, and instruct WildFly Swarm to read it to get its configuration variables.
@@ -186,6 +188,8 @@ Here we `@Inject` the value of the `stores.closed` configuration value (from the
 the code which loops through each closed store, and if the item is present in the closed store, override the quantity
 to be `0` indicating the store is closed.
 
+. Save the file
+
 === Deploy service and inspect ConfigMap
 
 It's time to test out our new code!
@@ -204,25 +208,20 @@ Be sure to replace `userXX` with your username.
 . To discover the URL of the route for this lab, execute:
 
 [source, bash]
-% oc get routes
+% oc get route inventory
 NAME        HOST/PORT                             PATH      SERVICES    PORT      TERMINATION   WILDCARD
 inventory   inventory-lab3.apps.127.0.0.1.nip.io             inventory   8080                    None
 
 The hostname of the service will be different depending on your cluster, but in this example the hostname
 is `inventory-lab3.apps.127.0.0.1.nip.io`. To exercise the endpoint, use `curl` once again:
 
-    % curl http://inventory-lab3.apps.127.0.0.1.nip.io/api/inventory/329299
+    % curl http://HOSTNAME/api/inventory/329299
     {"itemId":"329299","location":"Raleigh","quantity":0,"link":"http://maps.google.com/?q=Raleigh"}
 
 Be sure to replace the hostname with your actual hostname from the `oc get routes` command.
 
-Since the store is now closed (by virtue of `Raleigh` appearing in the list of closed stores), you should get:
-
-[source, bash]
-% curl http://inventory-lab3.apps.127.0.0.1.nip.io/api/inventory/329299
-{"itemId":"329299","location":"Raleigh","quantity":0,"link":"http://maps.google.com/?q=Raleigh"}
-
-Notice the `quantity:0`. Our store is now closed in Raleigh!
+Since the store is now closed (by virtue of `Raleigh` appearing in the list of closed stores), notice the `quantity:0`.
+Our store is now closed in Raleigh!
 
 === Modify configuration values
 
@@ -233,26 +232,42 @@ make changes to OpenShift. In this exercise, you will use the OpenShift Web Cons
 the hostname of the OpenShift Web Console hostname issued to you as part of this lab (e.g. `https://console.swarm.rhmw.org:8443`)
 
 . Login with your OpenShift Credentials.
+image:images/login.png[OpenShift login]
 
-. Once logged in, you will see a list of projects. Click on the `lab3-userXX` project. You'll see pods for both the inventory and inventory-database.
+. Once logged in, you will see a list of projects. Click on the `lab3-userXX` project.
+image:images/projects.png[Projects list]
+
+. You'll see pods for both the inventory and inventory-database.
+image:images/pods.png[Pods list]
 
 . Navigate to _Resources_ -> _Config Maps_. You should see one entry for the existing ConfigMap named `app-config`:
+image:images/configmap.png[Config Map]
 
 . Click on the name of the ConfigMap to see details including the values of the configuration items.
 
-. To change the value for the closed stores list, click on _Actions_ -> _Edit_. In the text box, change the value
-for the closed stores to remove `Raleigh`. The final value should simply by `Tokyo`.
+. To change the value for the closed stores list, click on _Actions_ -> _Edit_.
+image:images/configmapdetail.png[Config Map Detail]
+
+. In the text box, change the value for the closed stores to remove `Raleigh`. The final value should simply by `Tokyo`.
+image:images/configmapedit.png[Config Map Edit]
 
 . Click Save
 
 . At this point the ConfigMap has been updated, but the service must be restarted for the change to take effect. This
 does not require a re-build, but simply a reboot of the service. Navigate to _Applications_ -> _Deployments_. Click on
-the _inventory_ deployment to get details, and then click the _Deploy_ button to re-deploy.
+the _inventory_ deployment to get details:
+image:images/dc.png[DC Edit]
 
-. Return to the _Overview_ screen to watch the redeployment happen. Once complete, verify the store is now open by
-using the command line once again:
+ . And then click the _Deploy_ button to re-deploy.
+image:images/dcdeploy.png[DC Edit]
 
-    % curl http://inventory-lab3.apps.127.0.0.1.nip.io/api/inventory/329299
+. Return to the _Overview_ screen to watch the redeployment happen.
+image:images/deployaction.png[DC Edit]
+
+. Once complete, verify the store is now open by using the command line once again (and replace `HOSTNAME` with the hostname
+from `oc get route inventory`):
+
+    % curl http://HOSTNAME/api/inventory/329299
     {"itemId":"329299","location":"Raleigh","quantity":736,"link":"http://maps.google.com/?q=Raleigh"}%
 
 Success! The store is now open with `quantity:736` items remaining.
@@ -275,18 +290,18 @@ application and recreates a new pod to restart the application.
 === Add WildFly Swarm Fraction Dependencies
 
 The features implemented in this exercise require a couple of new Fraction dependencies. Open the `pom.xml` and
-add these dependencies starting on line XXX, just below the existing Fraction dependencies:
+add these dependencies, just below the existing Fraction dependencies (look for the `<!-- Add additional dependencies here -\->` comment):
 
 [source, xml]
-<dependency>
-    <groupId>org.wildfly.swarm</groupId>
-    <artifactId>monitor</artifactId>
-</dependency>
-<dependency>
-    <groupId>org.wildfly.core</groupId>
-    <artifactId>wildfly-controller-client</artifactId>
-    <version>2.2.1.Final</version>
-</dependency>
+        <dependency>
+            <groupId>org.wildfly.swarm</groupId>
+            <artifactId>monitor</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.wildfly.core</groupId>
+            <artifactId>wildfly-controller-client</artifactId>
+            <version>2.2.1.Final</version>
+        </dependency>
 
 === Implement Health Check Endpoint
 
@@ -412,11 +427,11 @@ With the health check in place, it's time to test it out. First, re-deploy the p
 [source,bash]
 % mvn clean package fabric8:build fabric8:deploy
 
-Once the project is deployed, you should be able to access the health check (be sure to replace the hostname
-with your service's correct hostname):
+Once the project is deployed, you should be able to access the health check (be sure to replace `HOSTNAME`
+with your service's correct hostname from `oc get route inventory`):
 
 [source, json]
-% curl http://inventory-lab3.apps.127.0.0.1.nip.io/health
+% curl http://HOSTNAME/health
 {
   "checks": [
     {
@@ -433,15 +448,18 @@ with your service's correct hostname):
 Let's kill the service. Before killing it, open up the OpenShift Web Console to your project's "Overview" page to witness
 the killing and resurrection of the service.
 
-With the Web Console open, go ahead and kill the service by accessing the previously-created _killme_ endpoint:
+With the Web Console open, go ahead and kill the service by accessing the previously-created _killme_ endpoint on the command line:
+(again, replace `HOSTNAME` as before):
 
 [source, bash]
-% curl http://inventory-lab3.apps.127.0.0.1.nip.io/api/service/killme
+% curl http://HOSTNAME/api/service/killme
 undefined
 
 Moments after the service is killed, OpenShift will notice this because its health probes will begin to fail. You'll
-notice that the dark blue circle representing the pod turns light-blue, indicating it's unready. While it's unready,
-attempt to access the service and witness its failure:
+notice that the dark blue circle representing the pod turns light-blue, indicating it's unready:
+image:images/killme.png[Killed pod]
+
+While it's unready, attempt to access the service and witness its failure:
 
 [source, bash]
 % curl http://inventory-lab3.apps.127.0.0.1.nip.io/api/service/killme
@@ -465,13 +483,12 @@ Accessing the health endpoint:
 }
 
 After a few more moments, OpenShift will decide the service is no longer viable, and the pod and container in which
-it is running is killed. OpenShift will then instantiate a new pod in its place. After the resurrection, attempt
-once again!
+it is running is killed. OpenShift will then instantiate a new pod in its place.
 
 NOTE: If you wait too long when verifying the death of the service, OpenShift might have a chance to resurrect before
 you can verify. You can just try again with the _killme_ endpoint if you really want to see it behave as shown.
 
-Once it's been resurrected, attempt once more to access the service:
+Once it's been resurrected, the circle will turn dark blue once again.  Attempt once more to access the service:
 
 [source, bash]
 % curl http://inventory-lab3.apps.127.0.0.1.nip.io/api/inventory/329299

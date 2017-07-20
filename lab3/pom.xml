@@ -152,6 +152,8 @@
             <version>${version.postgresql}</version>
         </dependency>
 
+        <!-- Add additional dependencies here -->
+
     </dependencies>
 
 </project>
