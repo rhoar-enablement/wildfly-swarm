@@ -48,7 +48,9 @@ app to perform the operations like migration.
 Separate the creation of the database schema from the initialization of data, and put them into two separate
 versions:
 
-. Create a new directory `src/main/resources/db/migration`.
+. Create a new directory `src/main/resources/db/migration`:
+[source, bash]
+% mkdir -p src/main/resources/db/migration
 
 . Within that directory, create a new file named `V1_0__CreateSchema.sql` with the following content:
 
@@ -85,9 +87,11 @@ This code initializes the data (if it doesn't already exist).
 To cause FlyWay to activate and apply migrations to the database when the app is started, you'll need to add some
 code that is executed at startup.
 
-. Create a new directory `src/main/java/com/redhat/coolstore/util/`.
+. Create a new directory `src/main/java/com/redhat/coolstore/util/`:
+[source, bash]
+% mkdir src/main/java/com/redhat/coolstore/util
 
-. Within the directory, create a new Java class file named `DatabaseMigrationStartup.java` with the following content:
+. Within the directory, create a new Java class file named `DataBaseMigrationStartup.java` with the following content:
 
 [source, java]
 ----
@@ -122,13 +126,16 @@ public class DataBaseMigrationStartup {
 
 === Add the Fraction Dependency
 
-. Open `pom.xml` and add the following dependency below the other WildFly Swarm dependencies starting on line XXX:
+. Open `pom.xml` and add the following dependency below the other WildFly Swarm dependencies (look for the
+`<!-- Insert additional dependencies here -\->`):
 
 [source, xml]
         <dependency>
             <groupId>org.wildfly.swarm</groupId>
             <artifactId>flyway</artifactId>
         </dependency>
+
+Don't forget to save the file.
 
 === Disable JPA schema operations
 
@@ -170,16 +177,18 @@ NOTE: This can just as equally be accessed with the OpenShift CLI, for example `
 
 To see the logs:
 
-. Open your favorite browser and navigate to `https://MASTER_HOSTNAME:8443`. Be sure to replace `MASTER_HOSTNAME` with
-the hostname of the OpenShift Web Console hostname issued to you as part of this lab (e.g. `https://console.swarm.rhmw.org:8443`)
+. Access the Web Console in the same manner as in previous labs, and switch to the `lab4-userXX` project by clicking
+on the "Home" icon at the upper-left and selecting your new `lab4-userXX` project. Once on the overview page for
+your new project, you'll see pods for both the inventory and inventory-database just as before.
 
-. Login with your OpenShift Credentials.
+. Click in the middle of the blue circle for the `inventory` pod:
+image:images/clickhere.png[Click here]
 
-. Once logged in, you will see a list of projects. Click on the `lab4-userXX` project. You'll see pods for both the inventory and inventory-database.
+. And then click on the `Logs` tab to see the logs.
+image:images/logtab.png[Log tab]
 
-. Click in the middle of the blue circle for the `inventory` pod, and then click on the `Logs` tab to see the logs.
-
-. Verify the presence of the `STARTING DATABASE MIGRATION` and `DATABASE MIGRATION DONE` messages
+. Verify the presence of the `STARTING DATABASE MIGRATION` and `DATABASE MIGRATION DONE` messages:
+image:images/logs.png[Log tab]
 
 . You should also see some output regarding the different migration steps showing you that FlyWay steps through the two
 migration steps (`V_1_0__CreateSchema` and `V1_1__AddInitialData`).
@@ -191,8 +200,11 @@ running the database, and issue the SQL statement `select * from schema_version;
 
 To verify that FlyWay migrations do *not* happen if the data is already there, simply cycle the inventory service and inspect the log again:
 
+. Return to the _Overview_ page.
+
 . Next to the blue circle representing the inventory pod, there is an up arrow ↑ and a down arrow ↓. These allow you to scale
 the number of copies (replicas) of the application.
+image:images/updown.png[Arrows tab]
 
 . Click the Down arrow the scale to `0`. Accept the warning.
 
@@ -214,14 +226,14 @@ Schema "public" is up to date. No migration necessary.
 In a microservices architecture, it is important to document the APIs that each service exposes.
 In this exercise you will add automatic documentation generation for the inventory service RESTful API.
 
-Swagger allows you to describe the structure of your APIs so that machines can read them. By reading your API’s
+https://swagger.io/[Swagger] allows you to describe the structure of your APIs so that machines can read them. By reading your API’s
 structure, Swagger can automatically build beautiful and interactive API documentation for consumers of the API.
 It can also automatically generate client libraries for your API in many languages.
 
 Swagger does this by asking your API to return a YAML or JSON that contains a detailed description of your entire API. This file is essentially a resource listing of your API which adheres to OpenAPI Specification. The specification asks you to include information like:
 
-WildFly Swarm have support for both machine-generated API documentation as well as interactive human-readable web
-interfaces. You will generate both in this exercise.
+WildFly Swarm has support for both machine-generated API documentation as well as interactive human-readable web
+interfaces using Swagger. You will generate both in this exercise.
 
 === Add Swagger Fraction dependencies
 
@@ -229,15 +241,15 @@ interfaces. You will generate both in this exercise.
 
 [source, xml]
 ----
-<dependency>
-    <groupId>org.wildfly.swarm</groupId>
-    <artifactId>swagger</artifactId>
-</dependency>
+        <dependency>
+            <groupId>org.wildfly.swarm</groupId>
+            <artifactId>swagger</artifactId>
+        </dependency>
 
-<dependency>
-    <groupId>org.wildfly.swarm</groupId>
-    <artifactId>swagger-webapp</artifactId>
-</dependency>
+        <dependency>
+            <groupId>org.wildfly.swarm</groupId>
+            <artifactId>swagger-webapp</artifactId>
+        </dependency>
 ----
 
 === Add WildFly Swarm Swagger Fraction configuration
@@ -264,7 +276,8 @@ For Java APIs, Swagger expects you to document your APIs using Java annotations 
 code that implements the APIs.
 
 . Open `src/main/java/com/redhat/coolstore/rest/InventoryEndpoint.java` and add annotations to the
-class and `getAvailability()` method:
+class and `getAvailability()` method signature. You can simply copy/paste in the entire file below, or
+manually add the annotations.
 
 [source, java]
 ----
@@ -341,12 +354,13 @@ and publish them to anyone who asks (by accessing the `/api/swagger.json` endpoi
 [source,bash]
 % mvn clean package fabric8:build fabric8:deploy
 
-. Once the application is deployed and up and running, access the automatically created documentation endpoint:
+. Once the application is deployed and up and running, access the automatically created documentation endpoint.
+As usual, replace `HOSTNAME` with the name of the route's host discovered by `oc get route inventory`.
 
 [source, bash]
-    % curl http://inventory-lab4.apps.127.0.0.1.nip.io/api/swagger.json
+    % curl http://HOSTNAME/api/swagger.json
     {"swagger":"2.0","info":{"description":"The API for our inventory service application","version":"1.0"
-    <and a lot more stuff>
+    .... and a lot more stuff .....
 
 This is the raw description of your API that is consumable by other machines, like IDEs and generators.
 
@@ -357,8 +371,18 @@ WildFly Swarm also includes the Swagger UI, which enables you to interactively b
 . Return to the OpenShift Web Console and the Overview screen for your project
 
 . Click on the Inventory service's route link:
+image:images/routelink.png[Route link]
 
 . This will open up the Swagger UI, and should look something like:
+image:images/swagger1.png[Route link]
 
-. Click on the service name to expand the service, and click on the `Try It!` link to exercise the API:
+. Click on the service name to expand the inventory service's description, then click on the GET endpoint:
+image:images/moreclick.png[Route link]
 
+. Click on the `Try It!` link to exercise the API. This causes your browser to invoke the API and show
+you the results, the HTTP response code and headers, as well as a direct URL you can copy/paste into your browser (this is optional) and an
+example _curl_ invocation to do the same:
+image:images/results.png[Route link]
+
+As you add more APIs and RESTful endpoints to your real world projects, they are automatically documented via
+Swagger and can be further browsed.
