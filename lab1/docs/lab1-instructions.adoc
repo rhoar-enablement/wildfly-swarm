@@ -150,7 +150,8 @@ To build an initial WildFly Swarm app:
 
 . Open the `pom.xml` file
 
-. Just after the `<properties>` section, add a new `<dependencyManagement>` section:
+. Just after the end of the `<properties>...</properties>` section, add a new `<dependencyManagement>` section below the
+`<!-- Add dependency management here -\->` comment:
 
 [source, xml]
   <dependencyManagement>
@@ -165,24 +166,26 @@ To build an initial WildFly Swarm app:
     </dependencies>
   </dependencyManagement>
 
-. Within the `<build>` section, add in the
-https://wildfly-swarm.gitbooks.io/wildfly-swarm-users-guide/content/getting-started/tooling/maven-plugin.html[WildFly Swarm Maven Plugin]:
+. Within the `<build> -> <plugins>` section, add in the
+https://wildfly-swarm.gitbooks.io/wildfly-swarm-users-guide/content/getting-started/tooling/maven-plugin.html[WildFly Swarm Maven Plugin]
+as a new `<plugin>` element immediately after the existing `<plugin>...</plugin>` entry. Look for the `<!-- Add additional <plugin>..</plugin> here -\->` comment
+and add below it:
 
 [source, xml]
-  <plugin>
-    <groupId>org.wildfly.swarm</groupId>
-    <artifactId>wildfly-swarm-plugin</artifactId>
-    <version>${version.wildfly.swarm}</version>
-    <executions>
-      <execution>
-        <goals>
-          <goal>package</goal>
-        </goals>
-      </execution>
-    </executions>
-  </plugin>
+      <plugin>
+        <groupId>org.wildfly.swarm</groupId>
+        <artifactId>wildfly-swarm-plugin</artifactId>
+        <version>${version.wildfly.swarm}</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>package</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
 
-. Within the `<properties>` section near the top, add in the version:
+. Inside of the the `<properties>` section, below the `<!-- Add additional properties here -\->` line, add a new property and value:
 
 [source, xml]
     <version.wildfly.swarm>2017.7.0</version.wildfly.swarm>
@@ -207,6 +210,11 @@ For example, you may want to run the same project using a different database (on
 one for production). This file enables you to reconfigure the application without changing its source
 code. More information can be found in the https://reference.wildfly-swarm.io/v/2017.7.0/configuration.html[WildFly Swarm documentation].
 We'll re-visit this in later exercises.
+
+CAUTION: YAML files are sensitive to indentation level for each line, so be sure to maintain the indentation
+level found in the snippet above!
+
+=== Building and running the Uberjar
 
 With all that done, it's time to run your first WildFly Swarm Uberjar:
 
@@ -274,7 +282,7 @@ it may make sense for you to maintain an explicit list of the fractions you need
 the specific dependencies. In this example app, we are using a small set of Java EE features, and will need fractions
 for them.
 
-. Replace the `<dependencies>` section with the following content:
+. Replace the entire `<dependencies>...</dependencies>` section in `pom.xml` with the following content:
 
 [source, xml]
 ----

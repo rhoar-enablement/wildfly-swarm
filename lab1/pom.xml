@@ -33,7 +33,11 @@
     <failOnMissingWebXml>false</failOnMissingWebXml>
     <version.h2>1.4.187</version.h2>
 
+    <!-- Add additional properties here -->
+
   </properties>
+
+  <!-- Add dependency management here -->
 
   <build>
     <plugins>
@@ -45,6 +49,9 @@
           <target>1.8</target>
         </configuration>
       </plugin>
+
+      <!-- Add additional <plugin>..</plugin> here -->
+
     </plugins>
   </build>
   <dependencies>
@@ -62,6 +69,7 @@
       <version>${version.h2}</version>
     </dependency>
 
+    <!-- Add additional dependencies here -->
 
   </dependencies>
 
