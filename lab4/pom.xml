@@ -146,21 +146,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.wildfly.swarm</groupId>
-            <artifactId>flyway</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.wildfly.swarm</groupId>
-            <artifactId>swagger</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.wildfly.swarm</groupId>
-            <artifactId>swagger-webapp</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>org.wildfly.core</groupId>
             <artifactId>wildfly-controller-client</artifactId>
             <version>2.2.1.Final</version>
@@ -177,6 +162,23 @@
             <artifactId>postgresql</artifactId>
             <version>${version.postgresql}</version>
         </dependency>
+
+        <!-- Insert additional dependencies here -->
+        <dependency>
+            <groupId>org.wildfly.swarm</groupId>
+            <artifactId>flyway</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.wildfly.swarm</groupId>
+            <artifactId>swagger</artifactId>
+        </dependency>
+    
+        <dependency>
+            <groupId>org.wildfly.swarm</groupId>
+            <artifactId>swagger-webapp</artifactId>
+        </dependency>
+
 
     </dependencies>
 
