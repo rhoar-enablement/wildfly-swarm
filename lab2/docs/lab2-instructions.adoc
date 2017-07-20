@@ -35,23 +35,26 @@ IMPORTANT: Be sure to replace `$HOME` with the directory you chose to put the co
 == Add dependencies for Postgres database
 
 In previous labs you used an in-memory database which gets erased each time the service stops. For production
-use, an external database is preferred in order to maintain data across app restarts. To add support for
-Postgres, open the `pom.xml` file and add the following `<dependency>` in the section just below the `com.h2database`
-dependency specification:
+use, an external database is preferred in order to maintain data across app restarts.
+
+To add support for Postgres, open the `pom.xml` file and add the following `<dependency>` in the `<dependency>...</dependency>` section
+just below the `<!-- Add additional dependencies here -\->` comment:
 
 [source, xml]
-<dependency>
- <groupId>org.postgresql</groupId>
- <artifactId>postgresql</artifactId>
- <version>${version.postgresql}</version>
-</dependency>
+    <dependency>
+     <groupId>org.postgresql</groupId>
+     <artifactId>postgresql</artifactId>
+     <version>${version.postgresql}</version>
+    </dependency>
 
-Next, add the Postgres version near the top of the file in the `<properties>` section:
+Next, add the Postgres version near the top of the file in the `<properties>` section below the `<!-- Add additional properties here -\->` comment:
 
 [source, xml]
 <version.postgresql>9.4.1207</version.postgresql>
 
 This will cause the Postgres driver to be included in your application when it is built.
+
+Don't forget to save the file!
 
 == Create a new WildFly Swarm Project Stage
 
@@ -61,7 +64,8 @@ containing the definition of the JPA Data source which connected the application
 the configuration that developers will use when running locally, and uses the Hypersonic (`h2`) in-memory database.
 For production use, you will use Postgres. To create a new production configuration:
 
-1. Copy the existing `project-defaults.yml` to a new file named `project-production.yml` in the same directory
+1. Copy the existing `project-defaults.yml` to a new file named `project-production.yml` in the same directory (`src/main/resources`)
+
 2. Open the file in the IDE and change the `datasources` section to read:
 [source, yaml]
     data-sources:
@@ -88,7 +92,9 @@ Fabric8 is a Red Hat-sponsored project which improves developer experience with 
 project is the Fabric8 Maven Plugin, which provides a rich set of features for building and deploying microservices
 to OpenShift. You will use this plugin in later sections, but for now you must enable the plugin:
 
-. In the `pom.xml` file, Add a new dependency in the `<dependencyManagement>` section for the Fabric8 BOM (Bill of Materials):
+. In the `pom.xml` file, Add a new dependency in the `<dependencyManagement>` section for the Fabric8 BOM (Bill of Materials)
+just below the `<!-- Add additional dependency management here -\->` comment:
+
 [source, xml]
  <dependency>
      <groupId>io.fabric8</groupId>
@@ -98,30 +104,33 @@ to OpenShift. You will use this plugin in later sections, but for now you must e
      <scope>import</scope>
  </dependency>
 
-. Still in `pom.xml`, add a new plugin dependency in the `<build>` -> `<plugins>` section below the WildFly Swarm plugin.
+. Still in `pom.xml`, add a new <plugin> in the `<build>` -> `<plugins>` section below the WildFly Swarm plugin just below
+the `<!-- Add additional plugins here -\->` comment:
+
 This dependency also configures the plugin for WildFly Swarm.
 [source, xml]
-<plugin>
-    <groupId>io.fabric8</groupId>
-    <artifactId>fabric8-maven-plugin</artifactId>
-    <version>${fabric8.maven.plugin.version}</version>
-    <executions>
-        <execution>
-            <goals>
-                <goal>resource</goal>
-            </goals>
-        </execution>
-    </executions>
-    <configuration>
-        <generator>
-            <includes>
-                <include>wildfly-swarm</include>
-            </includes>
-        </generator>
-    </configuration>
-</plugin>
+    <plugin>
+        <groupId>io.fabric8</groupId>
+        <artifactId>fabric8-maven-plugin</artifactId>
+        <version>${fabric8.maven.plugin.version}</version>
+        <executions>
+            <execution>
+                <goals>
+                    <goal>resource</goal>
+                </goals>
+            </execution>
+        </executions>
+        <configuration>
+            <generator>
+                <includes>
+                    <include>wildfly-swarm</include>
+                </includes>
+            </generator>
+        </configuration>
+    </plugin>
 
-. Add version information to the `<properties>` section at the top of the file for both Fabric8 and the Fabric8 Maven Plugin:
+. Add version information to the `<properties>` section at the top of the file for both Fabric8 and the Fabric8 Maven Plugin,
+below the `<!-- Add additional properties here -\->` comment:
 [source, xml]
 <fabric8.version>2.2.205</fabric8.version>
 <fabric8.maven.plugin.version>3.5.1</fabric8.maven.plugin.version>
@@ -226,7 +235,7 @@ the OpenShift _pod_ running the database. To discover the pod name:
 Notice there are two pods (one for the inventory service, one for the database). Copy/paste the name of the database
 pod . In this example the database pod name is `inventory-database-1-sx3gj`. Use it in the next command:
 
-    $ oc rsh inventory-database-1-sx3gj
+    $ oc rsh <POD NAME FROM ABOVE>
     sh-4.2$
 
 This provides a remote Linux shell into the container running the database. To dump the inventory database use the
@@ -260,17 +269,17 @@ As a workaround, you can re-start the service (not the database) using `oc deplo
 
 To exercise the inventory service from outside of OpenShift, first discover the external hostname:
 
-    % oc get routes
+    % oc get route inventory
     NAME        HOST/PORT                             PATH      SERVICES    PORT      TERMINATION   WILDCARD
     inventory   inventory-lab2.apps.127.0.0.1.nip.io             inventory   8080                    None
 
 The hostname of the service will be different depending on your cluster, but in this example the hostname
 is `inventory-lab2.apps.127.0.0.1.nip.io`. To exercise the endpoint, use `curl` once again:
 
-    % curl http://inventory-lab2.apps.127.0.0.1.nip.io/api/inventory/329299
+    % curl http://HOSTNAME/api/inventory/329299
     {"itemId":"329299","location":"Florida","quantity":736,"link":"http://maps.google.com/?q=Raleigh"}
 
-Be sure to replace the hostname with your actual hostname from the `oc get routes` command.
+Be sure to replace `HOSTNAME` with your actual hostname from the `oc get routes` command.
 
 NOTE: The output is identical to the previous lab, but now we are using OpenShift and Linux containers.
 This has many benefits for application development that are covered https://www.openshift.com/[elsewhere].
