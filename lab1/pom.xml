@@ -24,19 +24,22 @@
   <packaging>war</packaging>
 
   <name>Inventory Microservice</name>
-  <description>WildFly Swarm : REST - JDBC - Inventory Service</description>
+  <description>Java EE : REST - JDBC - Inventory Service</description>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <java.version>1.8</java.version>
+    <failOnMissingWebXml>false</failOnMissingWebXml>
+    <version.h2>1.4.187</version.h2>
+
+    <!-- Add additional properties here -->
 
     <version.wildfly.swarm>2017.7.0</version.wildfly.swarm>
 
-    <version.h2>1.4.187</version.h2>
-    <failOnMissingWebXml>false</failOnMissingWebXml>
-
   </properties>
+
+  <!-- Add dependency management here -->
 
   <dependencyManagement>
     <dependencies>
@@ -54,6 +57,16 @@
   <build>
     <plugins>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>1.8</source>
+          <target>1.8</target>
+        </configuration>
+      </plugin>
+
+      <!-- Add additional <plugin>..</plugin> here -->
+      <plugin>
         <groupId>org.wildfly.swarm</groupId>
         <artifactId>wildfly-swarm-plugin</artifactId>
         <version>${version.wildfly.swarm}</version>
@@ -65,16 +78,11 @@
           </execution>
         </executions>
       </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <source>1.8</source>
-          <target>1.8</target>
-        </configuration>
-      </plugin>
+
+
     </plugins>
   </build>
+
   <dependencies>
 
     <dependency>
