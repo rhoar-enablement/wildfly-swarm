@@ -100,6 +100,11 @@
                 <includes>
                     <include>wildfly-swarm</include>
                 </includes>
+                <config>
+                    <wildfly-swarm>
+                        <from>registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift</from>
+                    </wildfly-swarm>
+                </config>
             </generator>
         </configuration>
     </plugin>
