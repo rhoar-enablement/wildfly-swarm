@@ -44,7 +44,47 @@ This will create a copy of the lab materials in the `wildfly-swarm` subdirectory
 
 Each lab is self-contained within each of the subdirectories.
 
-NOTE: You can choose any directory, these instructions use `$HOME` as an example.
+NOTE: You can choose any directory to house your lab code, these instructions use `$HOME` as an example.
+
+=== If you get stuck during the labs
+At the beginning of each lab you will start with working source code, and make modifications yourself to demonstrate
+features of the software, ending with working source code that you modified.
+
+If you get stuck and can't figure out why something isn't working or compiling or you are getting strange errors,
+you can always compare your project and the contents of the files you are modifying with a pre-created solution
+in the `solution` branch of the git repository.
+
+NOTE: You can also just browse the solution in your browser at `https://github.com/rhoar-enablement/wildfly-swarm/tree/solution`
+
+For example, suppose you are on Lab 3 and editing the `pom.xml` file and your build fails. You show the differences
+between the "official" solution and YOUR code using:
+
+[source, bash]
+% cd $HOME/wildfly-swarm/lab3
+% git diff solution:lab3/pom.xml ./pom.xml
+
+To compare the entire source tree between your code and the Lab 3 code:
+
+[source, bash]
+% cd $HOME/wildfly-swarm/lab3
+% git diff solution:lab3/src ./src
+
+This uses the `git` command line to perform file comparisons using the named branch `solution` and your working
+directory of changes. Use the output from `git diff` to see if you've forgotten a step or mis-typed something.
+
+You can also get the entire solution and use that in case you simply want to fast-forward to the end of the lab.
+For example, suppose you are stuck on Lab 3 and time is running out, but you want to see the final solution before moving
+to lab 4. In this case you can follow these steps:
+
+. If you want to save the changes you've made, run `git stash save`. This will save your changes and then reset your working
+directory back to the beginning of the mab.
+. Next, run `git checkout solution` to switch to the solution branch. Files in your working directory should now be the solution's files.
+. Proceed with the lab (e.g. do a build, run a command, whatever is required in the lab after changing source code)
+. When you're done, don't forget to go back to the `master` branch so you can start the next lab at the beginning!
+[source, bash]
+% git reset --hard
+% git checkout master
+% git stash apply # optional, only needed if you saved your changes earlier
 
 == Open `lab1` using the IDE
 
