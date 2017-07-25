@@ -125,9 +125,18 @@ This dependency also configures the plugin for WildFly Swarm.
                 <includes>
                     <include>wildfly-swarm</include>
                 </includes>
-            </generator>
+                <config>
+                    <wildfly-swarm>
+                        <from>registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift</from>
+                    </wildfly-swarm>
+                </config>
+           </generator>
         </configuration>
     </plugin>
+
+NOTE: In the above configuration we are overriding the default Java base image used by Fabric8 to use the officially
+supported https://access.redhat.com/containers/?tab=overview#/registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift[Red Hat Java S2I image].
+In future versions of the plugin this may happen automatically, but for now we want to force usage of the supported Java base image.
 
 . Add version information to the `<properties>` section at the top of the file for both Fabric8 and the Fabric8 Maven Plugin,
 below the `<!-- Add additional properties here -\->` comment:
