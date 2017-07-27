@@ -303,6 +303,10 @@ add these dependencies, just below the existing Fraction dependencies (look for 
             <version>2.2.1.Final</version>
         </dependency>
 
+By adding the `monitor` fraction, Fabric8 will automatically add a _readinessProbe_ and _livenessProbe_ to the openshift
+_DeploymentConfig_ that is created when `mvn fabric8:deploy` is run. But you still need to implement the logic behind
+the health check, which you'll do next.
+
 === Implement Health Check Endpoint
 
 Create a new RESTful endpoint which will be used by OpenShift to probe our services:
@@ -387,39 +391,6 @@ The `killme()` method exposes another HTTP GET endpoint which will simulate the 
 Once this endpoint is called, our service will no longer function. We will use this to exercise the functionality of
 WildFly Swarm and OpenShift probes.
 
-=== Modify OpenShift Deployment to use Health Check
-
-To instruct OpenShift on how to use this new health endpoint, modify the DeploymentConfig for the service to add in
-a declaration of the probes:
-
-. Open `src/main/fabric8/inventory-deployment.yml`
-
-. At line XXX, below the comment `Insert health probes here`, add the following YAML snippet. As usual, take care to
-maintain indentation and line up the new code with the comment:
-
-[source, yaml]
-        # Insert health probes here
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 8080
-            scheme: HTTP
-          failureThreshold: 3
-          initialDelaySeconds: 10
-          periodSeconds: 5
-          successThreshold: 1
-          timeoutSeconds: 1
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 8080
-            scheme: HTTP
-          failureThreshold: 2
-          initialDelaySeconds: 60
-          periodSeconds: 3
-          successThreshold: 1
-          timeoutSeconds: 1
-
 === Deploy service and test Health Checks
 
 With the health check in place, it's time to test it out. First, re-deploy the project:
@@ -442,6 +413,7 @@ with your service's correct hostname from `oc get route inventory`):
   "outcome": "UP"
 }
 
+This is the same endpoint that OpenShift will access when it runs the app in a container.
 
 === Kill the Service
 

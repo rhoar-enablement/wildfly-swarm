@@ -38,28 +38,6 @@ spec:
           protocol: TCP
         securityContext:
           privileged: false
-        # Insert health probes here
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 8080
-            scheme: HTTP
-          failureThreshold: 3
-          initialDelaySeconds: 10
-          periodSeconds: 5
-          successThreshold: 1
-          timeoutSeconds: 1
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 8080
-            scheme: HTTP
-          failureThreshold: 2
-          initialDelaySeconds: 60
-          periodSeconds: 3
-          successThreshold: 1
-          timeoutSeconds: 1
-
       ## Insert Volumes here
       volumes:
         - configMap:
