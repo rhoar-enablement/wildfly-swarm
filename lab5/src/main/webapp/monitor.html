@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+<head>
+    <title>Topology Example</title>
+</head>
+<body>
+<h2>Topology Example</h2>
+<div id="topology"></div>
+
+<button onclick="getInventory();">Get Inventory</button>
+
+<div id="inventory"></div>
+
+<script src="/topology/topology.js"></script>
+
+<script type="text/javascript">
+
+    var Topology = topology();
+    var topologyDiv = document.getElementById("topology");
+    var inventoryDiv = document.getElementById("inventory");
+    // listen for changes to the service topology
+    // and update our component on change
+    Topology.onTopologyChange(function (topology) {
+
+        console.log("received new topology: " + JSON.stringify(topology));
+
+        var topologyTable = '<table border="1">';
+        for (var property in topology) {
+            if (topology.hasOwnProperty(property)) {
+                topologyTable += "<tr>";
+                topologyTable += "<td>";
+                topologyTable += property;
+                topologyTable += "</td>";
+                topologyTable += "<td>";
+                for (var i = 0; i < topology[property].length; ++i) {
+                    topologyTable += topology[property][i].endpoint + "<br/>";
+                }
+
+                topologyTable += "</td>";
+                topologyTable += "</tr>";
+            }
+        }
+        topologyTable += "</table>";
+        topologyDiv.innerHTML = topologyTable;
+    });
+
+    function getInventory() {
+        Topology.getJSON("inventory", "/api/inventory/329299").then(function(inv) {
+            inventoryDiv.innerHTML += ('<code>' + JSON.stringify(inv) + '</code><br>');
+        }, function(err) {
+            alert(err);
+        });
+    }
+</script>
+
+</body>
+</html>

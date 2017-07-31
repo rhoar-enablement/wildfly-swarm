@@ -1,0 +1,27 @@
+:noaudio:
+:scrollbar:
+:data-uri:
+:toc2:
+
+== Lab 5: Distributed microservices with WildFly Swarm Topology
+
+In this lab, you will use WildFly Swarm's _Topology_ feature
+
+.Requirements
+
+* Familiarity with Java programming
+* Knowledge of OpenShift concepts
+
+:numbered:
+
+== Find lab5 project files
+
+Each lab in this course is housed in separate directories. Using the command line, find and observe
+the files for this lab:
+
+    % cd $HOME/rhoar-enablement/lab5
+
+IMPORTANT: Be sure to replace `$HOME` with the directory you chose to put the content in previous labs.
+
+==
+
