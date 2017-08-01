@@ -24,7 +24,6 @@ import io.netty.buffer.ByteBufInputStream;
 import org.wildfly.swarm.topology.Advertise;
 
 import java.io.IOException;
-import java.util.Map;
 
 @RequestScoped
 @Advertise("inventory")
@@ -63,7 +62,7 @@ public class InventoryEndpoint {
                         Boolean isOpen = store.isOpen();
                         String storeAddress = store.getAddress();
 
-                        i.setLocation(i.getLocation() + " [STORE IS " + (isOpen ? "OPEN":"CLOSED") +
+                        i.setLocation(i.getLocation() + " [STORE IS " + (isOpen ? "OPEN" : "CLOSED") +
                                 " inventory:" + myAddress +
                                 " store:" + storeAddress + "]");
                         asyncResponse.resume(i);

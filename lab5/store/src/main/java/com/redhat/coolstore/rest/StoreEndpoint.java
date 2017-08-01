@@ -28,16 +28,16 @@ public class StoreEndpoint {
     @GET
     @Path("/{location}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Store getAvailability(
-            @PathParam("location")
-                    String location) {
+    public Store getAvailability(@PathParam("location") String location) {
 
-        String addr = uri.getAbsolutePath().toASCIIString();
+        String myAddress = uri.getAbsolutePath().toASCIIString();
         try {
-             addr += (","+ InetAddress.getLocalHost().getHostAddress());
+             myAddress += (","+ InetAddress.getLocalHost().getHostAddress());
         } catch (UnknownHostException ignored) {
         }
-        return new Store(location, !location.equalsIgnoreCase("raleigh"), addr);
+
+        // close the stores in Raleigh
+        return new Store(location, !location.equalsIgnoreCase("raleigh"), myAddress);
 
     }
 }
