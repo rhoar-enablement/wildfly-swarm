@@ -3,7 +3,7 @@
 :data-uri:
 :toc2:
 
-== Lab 5: Distributed microservices with WildFly Swarm Topology
+== Lab 5: Service discovery and fault tolerance with WildFly Swarm Topology
 
 In this lab, you will use WildFly Swarm's _Topology_ feature
 
@@ -23,5 +23,12 @@ the files for this lab:
 
 IMPORTANT: Be sure to replace `$HOME` with the directory you chose to put the content in previous labs.
 
-==
+== Add Topology fraction dependencies
+
+TODO
+
+== Enable REST endpoint advertisements
+
+TODO
+
 
