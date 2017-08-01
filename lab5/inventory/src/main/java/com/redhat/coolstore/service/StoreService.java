@@ -2,10 +2,7 @@ package com.redhat.coolstore.service;
 
 import com.netflix.ribbon.Ribbon;
 import com.netflix.ribbon.RibbonRequest;
-import com.netflix.ribbon.proxy.annotation.Http;
-import com.netflix.ribbon.proxy.annotation.ResourceGroup;
-import com.netflix.ribbon.proxy.annotation.TemplateName;
-import com.netflix.ribbon.proxy.annotation.Var;
+import com.netflix.ribbon.proxy.annotation.*;
 import io.netty.buffer.ByteBuf;
 
 @ResourceGroup( name="store" )
@@ -17,6 +14,9 @@ public interface StoreService {
     @Http(
             method = Http.HttpMethod.GET,
             uri = "/api/store/{location}"
+    )
+    @Hystrix(
+            fallbackHandler = StoreServiceFallback.class
     )
     RibbonRequest<ByteBuf> storeClosed(@Var("location") String location);
 
