@@ -10,12 +10,10 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
 
 import com.redhat.coolstore.model.Store;
-import org.wildfly.swarm.topology.Advertise;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-@Advertise("store")
 @Path("/store")
 public class StoreEndpoint {
 

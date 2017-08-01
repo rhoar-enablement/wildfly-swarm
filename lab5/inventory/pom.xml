@@ -173,7 +173,6 @@
             <version>${version.postgresql}</version>
         </dependency>
 
-        <!-- Insert additional dependencies here -->
         <dependency>
             <groupId>org.wildfly.swarm</groupId>
             <artifactId>flyway</artifactId>
@@ -189,25 +188,7 @@
             <artifactId>swagger-webapp</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>org.wildfly.swarm</groupId>
-            <artifactId>topology</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.wildfly.swarm</groupId>
-            <artifactId>topology-webapp</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.wildfly.swarm</groupId>
-            <artifactId>topology-openshift</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.wildfly.swarm</groupId>
-            <artifactId>ribbon</artifactId>
-        </dependency>
-
+        <!-- Insert additional dependencies here -->
 
     </dependencies>
 
