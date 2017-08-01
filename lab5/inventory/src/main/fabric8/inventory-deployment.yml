@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: DeploymentConfig
+metadata:
+  name: inventory
+spec:
+  replicas: 1
+  strategy:
+    rollingParams:
+      timeoutSeconds: 10800
+    type: Rolling
+  template:
+    metadata:
+      labels:
+        app: inventory
+        deploymentconfig: inventory
+    spec:
+      containers:
+      - env:
+        - name: KUBERNETES_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: JAVA_APP_DIR
+          value: /deployments
+        - name: JAVA_OPTIONS
+          value: "-Dswarm.project.stage=production -Dswarm.project.stage.file=file:///app/config/inventory-config.yml"
+        - name: GC_MAX_METASPACE_SIZE
+          value: 200
+
+        ## Insert Volume Mounts here
+        volumeMounts:
+          - name: config
+            mountPath: /app/config
+        name: inventory
+        image: inventory:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        securityContext:
+          privileged: false
+
+      ## Insert Volumes here
+      volumes:
+        - configMap:
+            name: app-config
+            items:
+            - key: "inventory-config"
+              path: "inventory-config.yml"
+          name: config
+  triggers:
+  - type: ConfigChange
+  - imageChangeParams:
+      automatic: true
+      containerNames:
+      - inventory
+      from:
+        kind: ImageStreamTag
+        name: inventory:latest
+    type: ImageChange
