@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: DeploymentConfig
 metadata:
-  name: inventory
+  name: store
 spec:
   replicas: 1
   strategy:
@@ -11,8 +11,8 @@ spec:
   template:
     metadata:
       labels:
-        app: inventory
-        deploymentconfig: inventory
+        app: store
+        deploymentconfig: store
     spec:
       containers:
       - env:
@@ -24,15 +24,8 @@ spec:
           value: /deployments
         - name: GC_MAX_METASPACE_SIZE
           value: 200
-        - name: JAVA_OPTIONS
-          value: "-Dswarm.project.stage=production -Dswarm.project.stage.file=file:///app/config/inventory-config.yml"
-
-        ## Insert Volume Mounts here
-        volumeMounts:
-          - name: config
-            mountPath: /app/config
-        name: inventory
-        image: inventory:latest
+        name: store
+        image: store:latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
@@ -41,21 +34,13 @@ spec:
         securityContext:
           privileged: false
 
-      ## Insert Volumes here
-      volumes:
-        - configMap:
-            name: app-config
-            items:
-            - key: "inventory-config"
-              path: "inventory-config.yml"
-          name: config
   triggers:
   - type: ConfigChange
   - imageChangeParams:
       automatic: true
       containerNames:
-      - inventory
+      - store
       from:
         kind: ImageStreamTag
-        name: inventory:latest
+        name: store:latest
     type: ImageChange

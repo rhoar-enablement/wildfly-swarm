@@ -11,7 +11,7 @@
 
 <button onclick="getInventory();">Get Inventory</button>
 
-<div id="inventory"></div>
+<div id="store"></div>
 
 <script src="/topology/topology.js"></script>
 
@@ -19,7 +19,7 @@
 
     var Topology = topology();
     var topologyDiv = document.getElementById("topology");
-    var inventoryDiv = document.getElementById("inventory");
+    var inventoryDiv = document.getElementById("store");
     // listen for changes to the service topology
     // and update our component on change
     Topology.onTopologyChange(function (topology) {
@@ -47,7 +47,7 @@
     });
 
     function getInventory() {
-        Topology.getJSON("inventory", "/api/inventory/329299").then(function(inv) {
+        Topology.getJSON("inventory", "/api/store/329299").then(function(inv) {
             inventoryDiv.innerHTML += ('<code>' + JSON.stringify(inv) + '</code><br>');
         }, function(err) {
             alert(err);
