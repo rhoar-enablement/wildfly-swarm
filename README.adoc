@@ -30,7 +30,8 @@ especially as it relates to OpenShift and containerized microservices.
 
 Here is a short list for the available exercises:
 
-* link:lab1/docs/lab1-instructions.adoc[Exercise 1 - Basic Project Structure and Local Developer Workflow]
+* link:lab1/docs/lab1-instructions.adoc[Exercise 1 - Basic WildFly Swarm Project Structure and Local Developer Workflow]
 * link:lab2/docs/lab2-instructions.adoc[Exercise 2 - Production Deployments to OpenShift using WildFly Swarm]
 * link:lab3/docs/lab3-instructions.adoc[Exercise 3 - Microservice features for Health checks and Configuration Management]
 * link:lab4/docs/lab4-instructions.adoc[Exercise 4 - Additional Fraction features with Swagger and Flyway]
+* link:lab5/docs/lab5-instructions.adoc[Exercise 5 - Advanced: Service discovery and fault tolerance with WildFly Swarm Topology]
