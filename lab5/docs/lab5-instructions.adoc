@@ -154,6 +154,7 @@ The _inventory_ service must be taught how to find and communicate with our new 
 to find it, how to call it, and what to do when it's not working:
 
 [source, java]
+----
 package com.redhat.coolstore.service;
 
 import com.netflix.ribbon.Ribbon;
@@ -177,6 +178,7 @@ public interface StoreService {
     RibbonRequest<ByteBuf> storeClosed(@Var("location") String location);
 
 }
+----
 
 . `@ResourceGroup(name="store")` defines how to find the service
 . `Ribbon.from()` fetches a load balanced instance of the service for calling later on
@@ -348,6 +350,7 @@ indicate that the store is closed. This will allow normal application behavior, 
 in the application making the call to our services.
 
 With the services defined and fallbacks in place, it's time to test out our new app!
+
 == Start Consul
 
 Microservices need a way to register and discover other microservices, For this exercise, you will run a
@@ -415,19 +418,20 @@ to observe changing IPs when load balancing.
 
 . Open another terminal window and run the inventory service:
 
+[source, bash]
 $ cd inventory; mvn clean wildfly-swarm:run -Dswarm.bind.address=127.0.0.1 -Dswarm.port.offset=1
 
 Notice the use of `swarm.port.offset`. Since the _store_ service is already running on port `8080`, we must tell Swarm
 to move all ports, so that using an offset of `1` means that our _inventory_ service will be accessible on port `8081`. Test it out:
 
 [source, bash]
-~  % curl http://localhost:8081/api/inventory/329299
+% curl http://localhost:8081/api/inventory/329299
 {"itemId":"329299","location":"Raleigh [STORE IS CLOSED inventory:http://localhost:8081/api/ store:http://127.0.0.1/api/store/Raleigh,10.16.196.131]","quantity":736,"link":"http://maps.google.com/?q=Raleigh"}
 
 Now test it again for a different product in _Tokyo_:
 
 [source, bash]
-~  % curl http://localhost:8081/api/inventory/444436
+% curl http://localhost:8081/api/inventory/444436
 {"itemId":"444436","location":"Tokyo [STORE IS OPEN inventory:http://localhost:8081/api/ store:http://127.0.0.1/api/store/Tokyo,10.16.196.131]","quantity":230,"link":"http://maps.google.com/?q=Tokyo"}
 
 Indeed, only Raleigh is closed.
