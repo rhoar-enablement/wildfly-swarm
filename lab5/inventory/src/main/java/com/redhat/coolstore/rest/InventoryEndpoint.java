@@ -16,17 +16,14 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
-import com.netflix.ribbon.RibbonRequest;
 import com.redhat.coolstore.model.Inventory;
 import com.redhat.coolstore.model.Store;
 import com.redhat.coolstore.service.InventoryService;
 import com.redhat.coolstore.service.StoreService;
-import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import org.wildfly.swarm.topology.Advertise;
 
 import java.io.IOException;
-import java.util.Observable;
 
 @RequestScoped
 @Advertise("inventory")
