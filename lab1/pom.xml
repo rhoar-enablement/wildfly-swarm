@@ -35,7 +35,7 @@
 
     <!-- Add additional properties here -->
 
-    <version.wildfly.swarm>2017.7.0</version.wildfly.swarm>
+    <version.wildfly.swarm>2017.8.1</version.wildfly.swarm>
 
   </properties>
 
