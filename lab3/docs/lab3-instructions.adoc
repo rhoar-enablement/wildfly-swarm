@@ -277,7 +277,11 @@ Success! The store is now open with `quantity:736` items remaining.
 In this part of the lab you will enhance OpenShift's ability to manage the application lifecycle by implementing
 a _health check pattern_. You may have noticed in previous labs that OpenShift considered the inventory application to be ready to accept service requests
 even before the application was truly ready. This is because OpenShift was not _taught_ how to recognize that our
-app was fully initialized and ready to accept requests.
+app was fully initialized and ready to accept requests. You also may have noticed this hint:
+
+image:images/nohealth.png[Health Check Warning]
+
+This is OpenShift's subtle hint that apps really should define health probes!
 
 One of the features of OpenShift is the ability to _probe_ applications. Probing is used to report the liveness and
 readiness or an application. In this use case, you configure an application which exposes an HTTP health endpoint to
