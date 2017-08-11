@@ -606,13 +606,13 @@ Be sure to replace `HOSTNAME` with your actual hostname from the `oc get route` 
 % curl http://HOSTNAME/api/inventory/329299
 {"itemId":"329299","location":"Raleigh [STORE IS CLOSED store:FALLBACK]","quantity":736,"link":"http://maps.google.com/?q=Raleigh"}
 
-. Scale the _store_ service to 3 pods:
+. Scale the services to 2 pods:
 
 [source, bash]
-% oc scale --replicas=3 dc/store
+% oc scale --replicas=2 dc/inventory dc/store
 
 After all store pods are up (watch the OpenShift web console), repeatedly test the _inventory_ service to ensure that the fallback is not employed
-and that the automatic load balancing causes requests to be sent to all 3 of the _store_ service instances
+and that the automatic load balancing causes requests to be sent to all of the _store_ service instances
 by watching the `STORE INSTANCE:` reported by the _store_ service's `address` field in the returned JSON object.
 
 NOTE: Depending on server load you may get 'stuck' to a specific instance of the _store_ service. Wait a minute or two and try again.
