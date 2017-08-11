@@ -258,33 +258,30 @@ public class InventoryEndpoint {
     public void getAvailability(@PathParam("itemId") String itemId,
                                 @Suspended AsyncResponse asyncResponse) {
         Inventory i = inventoryService.getInventory(itemId);
-        String myAddress = uriInfo.getBaseUri().toASCIIString();
 
         storeService.storeClosed(i.getLocation()).toObservable().subscribe(
-            (result) -> {
-                try {
-                    ObjectMapper mapper = new ObjectMapper();
-                    ObjectReader reader = mapper.reader();
-                    JsonFactory factory = new JsonFactory();
-                    JsonParser parser = factory.createParser(new ByteBufInputStream(result));
-                    Store store = reader.readValue(parser, Store.class);
-                    Boolean isOpen = store.isOpen();
-                    String storeAddress = store.getAddress();
+                (result) -> {
+                    try {
+                        ObjectMapper mapper = new ObjectMapper();
+                        ObjectReader reader = mapper.reader();
+                        JsonFactory factory = new JsonFactory();
+                        JsonParser parser = factory.createParser(new ByteBufInputStream(result));
+                        Store store = reader.readValue(parser, Store.class);
+                        Boolean isOpen = store.isOpen();
+                        String storeAddress = store.getAddress();
 
-                    i.setLocation(i.getLocation() + " [STORE IS " + (isOpen ? "OPEN" : "CLOSED") +
-                            " inventory:" + myAddress +
-                            " store:" + storeAddress + "]");
-                    asyncResponse.resume(i);
-                } catch (IOException e) {
-                    System.err.println("ERROR: " + e.getLocalizedMessage());
-                    asyncResponse.resume(e);
-                }
-            },
-            (err) -> {
-                System.err.println("ERROR: " + err.getLocalizedMessage());
-                asyncResponse.resume(err);
-        });
-
+                        i.setLocation(i.getLocation() + " [STORE IS " + (isOpen ? "OPEN" : "CLOSED") +
+                                " store:" + storeAddress + "]");
+                        asyncResponse.resume(i);
+                    } catch (IOException e) {
+                        System.err.println("ERROR: " + e.getLocalizedMessage());
+                        asyncResponse.resume(e);
+                    }
+                },
+                (err) -> {
+                    System.err.println("ERROR: " + err.getLocalizedMessage());
+                    asyncResponse.resume(err);
+                });
     }
 }
 ----
@@ -378,7 +375,6 @@ This will execute the Consul server and expose its port 8500 to other applicatio
     Gossip encrypt: false, RPC-TLS: false, TLS-Incoming: false
 ----
 
-
 == Run standalone WildFly Swarm app and test discovery and fallback
 
 . Open another terminal window and run the store service. Note that you must bind to a real IP address for discovery purposes,
@@ -408,13 +404,13 @@ so make note of the use of `swarm.bind.address`.
 
 [source, bash]
 % curl http://localhost:8080/api/store/raleigh
-{"location":"raleigh","open":false,"address":"http://localhost:8080/api/store/raleigh,10.16.196.131"}
+{"location":"raleigh","open":false,"address":" === STORE INSTANCE:4030 === "}
 
 Due to the logic in the `StoreEndpoint` class, any store named `Raleigh` (or `raleigh` or `RaLeIgH`) will be deemed
-`CLOSED`. All other stores are `OPEN`. What's up with Raleigh??
+`CLOSED` (`"open":false` in the output). All other stores are `OPEN`. What's up with Raleigh??
 
-Also note the IP address and endpoint information is included in the address of the store. We will use this in the next section
-to observe changing IPs when load balancing.
+Also note the IP address and endpoint information is included in the address of the store (in this case a random number
+generated once per store). We will use this in the next section to observe changing addresses when load balancing.
 
 . Open another terminal window and run the inventory service:
 
@@ -432,13 +428,15 @@ Now test it again for a different product in _Tokyo_:
 
 [source, bash]
 % curl http://localhost:8081/api/inventory/444436
-{"itemId":"444436","location":"Tokyo [STORE IS OPEN inventory:http://localhost:8081/api/ store:http://127.0.0.1/api/store/Tokyo,10.16.196.131]","quantity":230,"link":"http://maps.google.com/?q=Tokyo"}
+{"itemId":"329299","location":"Raleigh [STORE IS CLOSED store: === STORE INSTANCE:7168 === ]","quantity":736,"link":"http://maps.google.com/?q=Raleigh"}
 
-Indeed, only Raleigh is closed.
+Indeed, only Raleigh is closed. Notice the store instance ID (`7168` in this example) is the same, indicating the inventory
+service is using our single instance of the store service.
 
 == Run another instance
 
-To test the load balancing capabilities of WildFly Swarm, open yet another terminal window and run a second copy of the _store_ runtime:
+To test the load balancing capabilities of WildFly Swarm, open yet another terminal window and run a second copy of the _store_ runtime
+using a port offset of `2` (so that the service ends up running on port `8082`):
 
 [source, bash]
 % cd store; mvn wildfly-swarm:run -Dswarm.bind.address=127.0.0.1 -Dswarm.port.offset=2
@@ -465,7 +463,15 @@ TIP: Consul also includes a built-in web console for visualizing the various ser
 `http://localhost:8500` in your browser to see the console: image:images/consul.png[]
 
 
-. Repeatedly call the Inventory service, and observe the load balancing by seeing that the port number of the store service is different across invocations:
+. Repeatedly call the Inventory service, and observe the load balancing by seeing that the `STORE INSTANCE` of the store service is different across invocations:
+
+[source, bash]
+% for i in 1 2 3 4 5 ; do curl http://localhost:8081/api/inventory/329299 ; echo ; done
+  {"itemId":"329299","location":"Raleigh [STORE IS CLOSED store: === STORE INSTANCE:7168 === ]","quantity":736,"link":"http://maps.google.com/?q=Raleigh"}
+  {"itemId":"329299","location":"Raleigh [STORE IS CLOSED store: === STORE INSTANCE:5487 === ]","quantity":736,"link":"http://maps.google.com/?q=Raleigh"}
+  {"itemId":"329299","location":"Raleigh [STORE IS CLOSED store: === STORE INSTANCE:7168 === ]","quantity":736,"link":"http://maps.google.com/?q=Raleigh"}
+  {"itemId":"329299","location":"Raleigh [STORE IS CLOSED store: === STORE INSTANCE:5487 === ]","quantity":736,"link":"http://maps.google.com/?q=Raleigh"}
+  {"itemId":"329299","location":"Raleigh [STORE IS CLOSED store: === STORE INSTANCE:7168 === ]","quantity":736,"link":"http://maps.google.com/?q=Raleigh"}
 
 == Break the circuit
 
@@ -477,11 +483,11 @@ kick in and you should see this in the message returned:
 
 [source, bash]
 % curl http://localhost:8081/api/inventory/444436
-{"itemId":"444436","location":"Tokyo [STORE IS CLOSED inventory:http://localhost:8081/api/ store:FALLBACK]","quantity":230,"link":"http://maps.google.com/?q=Tokyo"}
+{"itemId":"444436","location":"Tokyo [STORE IS CLOSED store:FALLBACK]","quantity":230,"link":"http://maps.google.com/?q=Tokyo"}
 
-Notice that all stores are `CLOSED` and the address of the store is `FALLBACK`.
+Notice that all stores are `CLOSED` (we used `Tokyo` instead of `Raleigh`) and the address of the store is `FALLBACK`.
 
-Restart one of the stopped _store_ services. After a few seconds, retry the _inventory_ service again, and the fallback should no longer be used.
+Restart one of the stopped _store_ services. After about 30 seconds, retry the _inventory_ service again, and the fallback should no longer be used.
 
 [TIP]
 ====
@@ -519,7 +525,7 @@ dependency for each should look like:
 
 == Deploy to OpenShift
 
-That's all there is to it. To deploy to OpenShift:
+That's all there is to it. No code changes whatsoever! To deploy to OpenShift:
 
 . Make sure you're logged in:
 
@@ -563,16 +569,16 @@ store     store-lab5.apps.127.0.0.1.nip.io              store      8080         
 
 [source, bash]
 % curl http://HOSTNAME/api/store/raleigh
-{"location":"raleigh","open":false,"address":"http://store-labs5.apps.127.0.0.1.nip.io/api/store/raleigh,172.17.0.7"}
+{"location":"raleigh","open":false,"address":" === STORE INSTANCE:1189 === "}
 
 Be sure to replace `HOSTNAME` with your actual hostname from the `oc get route` command.
 
 . Deploy the _inventory_ service:
 
 [source, bash]
-% cd store; mvn clean package fabric8:build fabric8:deploy
+% cd inventory; mvn clean package fabric8:build fabric8:deploy
 
-. Retrieve the route hostname to the _inventory_service:
+. Retrieve the route hostname to the _inventory_ service:
 
 [source, bash]
 % oc get route inventory
@@ -583,7 +589,7 @@ inventory   inventory-lab5.apps.127.0.0.1.nip.io            inventory   8080    
 
 [source, bash]
 % curl http://HOSTNAME/api/inventory/329299
-{"itemId":"329299","location":"Raleigh [STORE IS CLOSED inventory:http://inventory-labs5.apps.127.0.0.1.nip.io/api/ store:http://store/api/store/Raleigh,172.17.0.7]","quantity":736,"link":"http://maps.google.com/?q=Raleigh"}
+{"itemId":"329299","location":"Raleigh [STORE IS CLOSED store: === STORE INSTANCE:1189 === ]","quantity":736,"link":"http://maps.google.com/?q=Raleigh"}
 
 Be sure to replace `HOSTNAME` with your actual hostname from the `oc get route` command.
 
@@ -598,16 +604,16 @@ Be sure to replace `HOSTNAME` with your actual hostname from the `oc get route` 
 
 [source, bash]
 % curl http://HOSTNAME/api/inventory/329299
-{"itemId":"329299","location":"Raleigh [STORE IS CLOSED inventory:http://inventory-labs5.apps.127.0.0.1.nip.io/api/ store:FALLBACK]","quantity":736,"link":"http://maps.google.com/?q=Raleigh"}
+{"itemId":"329299","location":"Raleigh [STORE IS CLOSED store:FALLBACK]","quantity":736,"link":"http://maps.google.com/?q=Raleigh"}
 
 . Scale the _store_ service to 3 pods:
 
 [source, bash]
 % oc scale --replicas=3 dc/store
 
-After a few seconds, repeatedly test the _inventory_ service to ensure that the fallback is not employed
+After all store pods are up (watch the OpenShift web console), repeatedly test the _inventory_ service to ensure that the fallback is not employed
 and that the automatic load balancing causes requests to be sent to all 3 of the _store_ service instances
-by watching the IP address reported by the _store_ service's `address` field in the returned JSON object.
+by watching the `STORE INSTANCE:` reported by the _store_ service's `address` field in the returned JSON object.
 
 NOTE: Depending on server load you may get 'stuck' to a specific instance of the _store_ service. Wait a minute or two and try again.
 
