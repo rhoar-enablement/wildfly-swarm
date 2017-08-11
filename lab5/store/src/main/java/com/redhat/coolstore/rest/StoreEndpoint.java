@@ -11,11 +11,10 @@ import javax.ws.rs.core.UriInfo;
 
 import com.redhat.coolstore.model.Store;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-
 @Path("/store")
 public class StoreEndpoint {
+
+    public static final String id = " === " + "STORE INSTANCE:"+Math.round(Math.random() * 10000) + " === ";
 
     @Context
     UriInfo uri;
@@ -28,14 +27,7 @@ public class StoreEndpoint {
     @Produces(MediaType.APPLICATION_JSON)
     public Store getAvailability(@PathParam("location") String location) {
 
-        String myAddress = uri.getAbsolutePath().toASCIIString();
-        try {
-             myAddress += (","+ InetAddress.getLocalHost().getHostAddress());
-        } catch (UnknownHostException ignored) {
-        }
-
         // close the stores in Raleigh
-        return new Store(location, !location.equalsIgnoreCase("raleigh"), myAddress);
+        return new Store(location, !location.equalsIgnoreCase("raleigh"), id);
 
-    }
-}
+    }}
