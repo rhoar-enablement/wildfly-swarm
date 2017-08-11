@@ -16,14 +16,17 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import com.netflix.ribbon.RibbonRequest;
 import com.redhat.coolstore.model.Inventory;
 import com.redhat.coolstore.model.Store;
 import com.redhat.coolstore.service.InventoryService;
 import com.redhat.coolstore.service.StoreService;
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import org.wildfly.swarm.topology.Advertise;
 
 import java.io.IOException;
+import java.util.Observable;
 
 @RequestScoped
 @Advertise("inventory")
@@ -49,7 +52,6 @@ public class InventoryEndpoint {
     public void getAvailability(@PathParam("itemId") String itemId,
                                 @Suspended AsyncResponse asyncResponse) {
         Inventory i = inventoryService.getInventory(itemId);
-        String myAddress = uriInfo.getBaseUri().toASCIIString();
 
         storeService.storeClosed(i.getLocation()).toObservable().subscribe(
                 (result) -> {
@@ -63,7 +65,6 @@ public class InventoryEndpoint {
                         String storeAddress = store.getAddress();
 
                         i.setLocation(i.getLocation() + " [STORE IS " + (isOpen ? "OPEN" : "CLOSED") +
-                                " inventory:" + myAddress +
                                 " store:" + storeAddress + "]");
                         asyncResponse.resume(i);
                     } catch (IOException e) {
@@ -75,9 +76,6 @@ public class InventoryEndpoint {
                     System.err.println("ERROR: " + err.getLocalizedMessage());
                     asyncResponse.resume(err);
                 });
-
-        System.out.println("Received request for inventory for itemId=" + itemId);
-
 
     }
 

@@ -196,7 +196,7 @@
 
         <dependency>
             <groupId>org.wildfly.swarm</groupId>
-            <artifactId>topology-webapp</artifactId>
+            <artifactId>topology-openshift</artifactId>
         </dependency>
 
         <dependency>

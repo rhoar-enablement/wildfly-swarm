@@ -147,7 +147,7 @@
         </dependency>
         <dependency>
             <groupId>org.wildfly.swarm</groupId>
-            <artifactId>topology-consul</artifactId>
+            <artifactId>topology-openshift</artifactId>
         </dependency>
         <dependency>
             <groupId>org.wildfly.swarm</groupId>
