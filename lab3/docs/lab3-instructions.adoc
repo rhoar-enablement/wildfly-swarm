@@ -229,7 +229,7 @@ Let's exercise the power of ConfigMaps and re-open the store. Until now you've b
 make changes to OpenShift. In this exercise, you will use the OpenShift Web Console to edit the ConfigMap.
 
 . Open your favorite browser and navigate to `https://MASTER_HOSTNAME:8443`. Be sure to replace `MASTER_HOSTNAME` with
-the hostname of the OpenShift Web Console hostname issued to you as part of this lab (e.g. `https://console.swarm.rhmw.org:8443`)
+the hostname of the OpenShift Web Console hostname issued to you as part of this lab (e.g. `https://master.83de.openshift.opentlc.com:443`)
 
 . Login with your OpenShift Credentials.
 image:images/login.png[OpenShift login]
@@ -402,6 +402,12 @@ With the health check in place, it's time to test it out. First, re-deploy the p
 [source,bash]
 % mvn clean package fabric8:build fabric8:deploy
 
+During build and deploy, you'll notice WildFly Swarm adding in health checks for you:
+
+[source]
+[INFO] F8: wildfly-swarm-health-check: Adding readiness probe on port 8080, path='/health', scheme='HTTP', with initial delay 10 seconds
+[INFO] F8: wildfly-swarm-health-check: Adding liveness probe on port 8080, path='/health', scheme='HTTP', with initial delay 180 seconds
+
 Once the project is deployed, you should be able to access the health check (be sure to replace `HOSTNAME`
 with your service's correct hostname from `oc get route inventory`):
 
@@ -436,9 +442,10 @@ notice that the dark blue circle representing the pod turns light-blue, indicati
 image:images/killme.png[Killed pod]
 
 While it's unready, attempt to access the service and witness its failure:
+(again, replace `HOSTNAME` as before):
 
 [source, bash]
-% curl http://inventory-lab3.apps.127.0.0.1.nip.io/api/service/killme
+% curl http://HOSTNAME/api/service/killme
 <html><head><title>Error</title></head><body>503 - Service Unavailable</body></html>
 
 Accessing the health endpoint:

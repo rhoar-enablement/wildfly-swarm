@@ -66,7 +66,7 @@ For production use, you will use Postgres. To create a new production configurat
 
 1. Copy the existing `project-defaults.yml` to a new file named `project-production.yml` in the same directory (`src/main/resources`)
 
-2. Open the file in the IDE and change the `datasources` section to read:
+2. Open the file in the IDE and change the `data-sources` section to read:
 [source, yaml]
     data-sources:
       InventoryDS:
@@ -191,7 +191,7 @@ should have been given a URL to an OpenShift cluster, along with a username and 
 login to the CLI:
 
 [source, bash]
-% oc login https://console.training.rhmw.org:8443 -u USER -p PASS
+% oc login https://master.83de.openshift.opentlc.com:443 -u USER -p PASS
 
 Be sure to replace `USER` and `PASS` with your supplied credentials and accept any security exceptions (which is never
 a good idea in a production scenario, but is fine for this lab).
@@ -272,7 +272,11 @@ This provides a remote Linux shell into the container running the database. To d
 Here you can see the data that was populated when the inventory service started.
 
 NOTE: If you do not see any rows in the database, it may be that the service is not yet running or initialized too quickly (more on this later).
-As a workaround, you can re-start the service (not the database) using `oc deploy inventory --latest`
+As a workaround, you can re-start the service (not the database) using `oc deploy inventory --latest`.
+You should also check that your `project-production.yml` file has identical section names and indentation as the
+`project-defaults.yml` file!
+
+Exit the shell by typing CTRL-D in the pod's shell or `exit`.
 
 == Exercise the endpoint
 
@@ -302,3 +306,6 @@ To completely remove the project from OpenShift, use the Fabric8 Maven Plugin:
 This will tear down the objects and runtimes from the OpenShift cluster and complete
 the typical developer lifecycle.
 
+TIP: For rapid development and re-deploy, Fabric8 can be configured to _watch_ your project(s) for changes and
+quickly re-deploy, eliminating long round-trip edit/build/deploy cycles. More details can be found in the
+https://maven.fabric8.io[Fabric8 docs].

@@ -93,11 +93,10 @@ the files for this lab:
 
     % cd $HOME/rhoar-enablement/lab1
 
-Included in your lab environment is _Visual Studio Code_, a lightweight IDE for editing projects.
-Load the first lab into the IDE:
+Load the first lab into your favorite code editor or IDE:
 
     $ cd lab1
-    $ code .
+    $ code .     # or vim, emacs, JBoss Developer Studio, IntelliJ IDEA, etc.
 
 Once loaded, you should see the lab files and be able to navigate amongst the files. The components
 of this first project are laid out in different subdirectories according to Maven best practices:
@@ -125,14 +124,14 @@ Within the `resources/` subdirectory are:
 
 == Examine the REST endpoint
 
-This project exposes a single RESTful application defined in `RestApplication.java`:
+This project exposes a single RESTful application defined in `src/main/java/com/redhat/coolstore/rest/RestApplication.java`:
 
 [source, java]
 @ApplicationPath("/api")
 public class RestApplication extends Application {
 }
 
-Then within `InventoryEndpoint.java` a single endpoint is defined:
+Then within `InventoryEndpoint.java` in the same package a single endpoint is defined:
 
 [source, java]
     @GET
@@ -164,9 +163,12 @@ To build the project, use Maven:
 
     % mvn clean package
 
+Depending on how populated your local maven repository is, this command may take several minutes to download
+the necessary bits.
+
 This command will delete any previous builds and re-package the project into a standard Java EE web archive
-(a `.war` file). You should get a `BUILD SUCCESS` message (if you do not, your build failed). Once built,
-the resulting war is located in the `target/` directory:
+(a `.war` file). You should get a `BUILD SUCCESS` message (if you do not, your build failed, and you should
+figure out why before proceeding). Once built, the resulting war is located in the `target/` directory:
 
     % ls target/*.war
     target/inventory-1.0.0-SNAPSHOT.war
@@ -228,7 +230,7 @@ and add below it:
 . Inside of the the `<properties>` section, below the `<!-- Add additional properties here -\->` line, add a new property and value:
 
 [source, xml]
-    <version.wildfly.swarm>2017.7.0</version.wildfly.swarm>
+    <version.wildfly.swarm>2017.8.1</version.wildfly.swarm>
 
 . Finally, you'll need to define the data source used by the app (this is normally done through your app server, but in this
 case you are running outside of a traditional Java EE App server, so you'll need to define it. Create a new file at
@@ -264,7 +266,7 @@ $ mvn clean package
 You'll see several lines of output, and see that WildFly Swarm will auto-detect the necessary components needed to run the app later:
 
 [source]
-[INFO] Detected fractions: cdi:2017.7.0, ejb:2017.7.0, jaxrs:2017.7.0, jpa:2017.7.0
+[INFO] Detected fractions: cdi:2017.8.1, ejb:2017.8.1, jaxrs:2017.8.1, jpa:2017.8.1
 
 After a `BUILD SUCCESS`, in addition to the `.war` file, WildFly Swarm creates an `Uberjar`:
 
@@ -315,6 +317,8 @@ The RESTful endpoint returned a JSON object representing the inventory count for
 
 Stop the service by pressing CTRL-C in the terminal window.
 
+Congratulations! You've just built your first WildFly Swarm app!
+
 == Explicitly Declare Dependencies
 
 In some cases, autodetection will fail to detect some dependencies depending on which fractions you need. Longer term,
@@ -322,7 +326,10 @@ it may make sense for you to maintain an explicit list of the fractions you need
 the specific dependencies. In this example app, we are using a small set of Java EE features, and will need fractions
 for them.
 
-. Replace the entire `<dependencies>...</dependencies>` section in `pom.xml` with the following content:
+. Replace the entire `<dependencies>...</dependencies>` section in `pom.xml` with the following content. Be sure
+you are NOT changing dependencies inside of the `<dependencyManagement>` section. Only replace the dependencies
+section near the end of the file, that originally contained the `javaee-api` dependency:
+
 
 [source, xml]
 ----
