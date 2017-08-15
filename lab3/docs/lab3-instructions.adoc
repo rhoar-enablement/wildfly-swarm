@@ -112,6 +112,7 @@ application which ConfigMap to mount, where to mount it, and how to expose its c
               path: "inventory-config.yml"
           name: config
 
++
 WARNING: Be sure that the indentation above is maintained, and that the first line with `volumes:` is in the same
 column as the `# Insert Volumes here` comment!
 
@@ -141,7 +142,7 @@ is closed, then return `0` for the inventory count for any product in that store
 
 . Open `src/main/java/com/redhat/coolstore/rest/InventoryEndpoint.java` and replace the entire contents with this
 new class implementation:
-
++
 [source,java]
 ----
 package com.redhat.coolstore.rest;
@@ -183,7 +184,7 @@ public class InventoryEndpoint {
     }
 }
 ----
-
++
 Here we `@Inject` the value of the `stores.closed` configuration value (from the ConfigMap) and then reference it in
 the code which loops through each closed store, and if the item is present in the closed store, override the quantity
 to be `0` indicating the store is closed.
@@ -197,29 +198,31 @@ It's time to test out our new code!
 . Create a new OpenShift project to house lab3:
 [source, bash]
 % oc new-project lab3-userXX
-
++
 Be sure to replace `userXX` with your username.
 
 . To re-deploy the application, execute:
-
++
 [source,bash]
 % mvn clean package fabric8:build fabric8:deploy
 
 . To discover the URL of the route for this lab, execute:
-
++
 [source, bash]
 % oc get route inventory
 NAME        HOST/PORT                             PATH      SERVICES    PORT      TERMINATION   WILDCARD
 inventory   inventory-lab3.apps.127.0.0.1.nip.io             inventory   8080                    None
-
++
 The hostname of the service will be different depending on your cluster, but in this example the hostname
-is `inventory-lab3.apps.127.0.0.1.nip.io`. To exercise the endpoint, use `curl` once again:
+is `inventory-lab3.apps.127.0.0.1.nip.io`.
+
+. To exercise the endpoint, use `curl` once again:
 
     % curl http://HOSTNAME/api/inventory/329299
     {"itemId":"329299","location":"Raleigh","quantity":0,"link":"http://maps.google.com/?q=Raleigh"}
-
++
 Be sure to replace the hostname with your actual hostname from the `oc get routes` command.
-
++
 Since the store is now closed (by virtue of `Raleigh` appearing in the list of closed stores), notice the `quantity:0`.
 Our store is now closed in Raleigh!
 
@@ -316,7 +319,7 @@ the health check, which you'll do next.
 Create a new RESTful endpoint which will be used by OpenShift to probe our services:
 
 . Create a new file `src/main/java/com/redhat/coolstore/rest/HealthEndpoint.java` with the following content:
-
++
 [source,java]
 ----
 package com.redhat.coolstore.rest;
@@ -427,29 +430,31 @@ This is the same endpoint that OpenShift will access when it runs the app in a c
 
 === Kill the Service
 
-Let's kill the service. Before killing it, open up the OpenShift Web Console to your project's "Overview" page to witness
+Let's kill the service.
+
+. Before killing it, open up the OpenShift Web Console to your project's "Overview" page to witness
 the killing and resurrection of the service.
 
-With the Web Console open, go ahead and kill the service by accessing the previously-created _killme_ endpoint on the command line:
+. With the Web Console open, go ahead and kill the service by accessing the previously-created _killme_ endpoint on the command line:
 (again, replace `HOSTNAME` as before):
-
++
 [source, bash]
 % curl http://HOSTNAME/api/service/killme
 undefined
 
-Moments after the service is killed, OpenShift will notice this because its health probes will begin to fail. You'll
+. Moments after the service is killed, OpenShift will notice this because its health probes will begin to fail. You'll
 notice that the dark blue circle representing the pod turns light-blue, indicating it's unready:
 image:images/killme.png[Killed pod]
 
-While it's unready, attempt to access the service and witness its failure:
+. While it's unready, attempt to access the service and witness its failure:
 (again, replace `HOSTNAME` as before):
-
++
 [source, bash]
 % curl http://HOSTNAME/api/service/killme
 <html><head><title>Error</title></head><body>503 - Service Unavailable</body></html>
 
-Accessing the health endpoint:
-
+. Access the health endpoint:
++
 [source, bash]
 % curl http://inventory-lab3.apps.127.0.0.1.nip.io/health
 {
@@ -464,19 +469,19 @@ Accessing the health endpoint:
   ],
   "outcome": "DOWN"
 }
-
++
 After a few more moments, OpenShift will decide the service is no longer viable, and the pod and container in which
 it is running is killed. OpenShift will then instantiate a new pod in its place.
-
++
 NOTE: If you wait too long when verifying the death of the service, OpenShift might have a chance to resurrect before
 you can verify. You can just try again with the _killme_ endpoint if you really want to see it behave as shown.
 
-Once it's been resurrected, the circle will turn dark blue once again.  Attempt once more to access the service:
-
+. Once it's been resurrected, the circle will turn dark blue once again.  Attempt once more to access the service:
++
 [source, bash]
 % curl http://inventory-lab3.apps.127.0.0.1.nip.io/api/inventory/329299
 {"itemId":"329299","location":"Raleigh","quantity":736,"link":"http://maps.google.com/?q=Raleigh"}
-
++
 It's back! OpenShift will do its best to keep as many copies of the app running as has been instructed (in this case
 1 copy).
 

@@ -37,9 +37,9 @@ IMPORTANT: Be sure to replace `$HOME` with the directory you chose to put the co
 In previous labs you used an in-memory database which gets erased each time the service stops. For production
 use, an external database is preferred in order to maintain data across app restarts.
 
-To add support for Postgres, open the `pom.xml` file and add the following `<dependency>` in the `<dependency>...</dependency>` section
+. To add support for Postgres, open the `pom.xml` file and add the following `<dependency>` in the `<dependency>...</dependency>` section
 just below the `<!-- Add additional dependencies here -\->` comment:
-
++
 [source, xml]
     <dependency>
      <groupId>org.postgresql</groupId>
@@ -47,13 +47,12 @@ just below the `<!-- Add additional dependencies here -\->` comment:
      <version>${version.postgresql}</version>
     </dependency>
 
-Next, add the Postgres version near the top of the file in the `<properties>` section below the `<!-- Add additional properties here -\->` comment:
-
+. Next, add the Postgres version near the top of the file in the `<properties>` section below the `<!-- Add additional properties here -\->` comment:
++
 [source, xml]
 <version.postgresql>9.4.1207</version.postgresql>
-
++
 This will cause the Postgres driver to be included in your application when it is built.
-
 Don't forget to save the file!
 
 == Create a new WildFly Swarm Project Stage
@@ -64,9 +63,9 @@ containing the definition of the JPA Data source which connected the application
 the configuration that developers will use when running locally, and uses the Hypersonic (`h2`) in-memory database.
 For production use, you will use Postgres. To create a new production configuration:
 
-1. Copy the existing `project-defaults.yml` to a new file named `project-production.yml` in the same directory (`src/main/resources`)
+. Copy the existing `project-defaults.yml` to a new file named `project-production.yml` in the same directory (`src/main/resources`)
 
-2. Open the file in the IDE and change the `data-sources` section to read:
+. Open the file in the IDE and change the `data-sources` section to read:
 [source, yaml]
     data-sources:
       InventoryDS:
@@ -75,7 +74,7 @@ For production use, you will use Postgres. To create a new production configurat
         user-name: swarm
         password: password
 
-3. Save the file
+. Save the file
 
 CAUTION: YAML files are sensitive to indentation level for each line, so be sure to maintain the indentation
 level found in the original file!
@@ -94,7 +93,7 @@ to OpenShift. You will use this plugin in later sections, but for now you must e
 
 . In the `pom.xml` file, Add a new dependency in the `<dependencyManagement>` section for the Fabric8 BOM (Bill of Materials)
 just below the `<!-- Add additional dependency management here -\->` comment:
-
++
 [source, xml]
  <dependency>
      <groupId>io.fabric8</groupId>
@@ -106,8 +105,7 @@ just below the `<!-- Add additional dependency management here -\->` comment:
 
 . Still in `pom.xml`, add a new <plugin> in the `<build>` -> `<plugins>` section below the WildFly Swarm plugin just below
 the `<!-- Add additional plugins here -\->` comment:
-
-This dependency also configures the plugin for WildFly Swarm.
++
 [source, xml]
     <plugin>
         <groupId>io.fabric8</groupId>
@@ -133,7 +131,9 @@ This dependency also configures the plugin for WildFly Swarm.
            </generator>
         </configuration>
     </plugin>
-
++
+This dependency also configures the plugin for WildFly Swarm.
++
 NOTE: In the above configuration we are overriding the default Java base image used by Fabric8 to use the officially
 supported https://access.redhat.com/containers/?tab=overview#/registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift[Red Hat Java S2I image].
 In future versions of the plugin this may happen automatically, but for now we want to force usage of the supported Java base image.

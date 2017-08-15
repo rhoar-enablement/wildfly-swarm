@@ -53,7 +53,7 @@ versions:
 % mkdir -p src/main/resources/db/migration
 
 . Within that directory, create a new file named `V1_0__CreateSchema.sql` with the following content:
-
++
 [source, sql]
 create table INVENTORY (
     itemId varchar(255) not null,
@@ -61,13 +61,13 @@ create table INVENTORY (
     location varchar(255),
     quantity int4 not null, primary key (itemId)
 );
-
++
 This code is responsible for creating the database schema (if it doesn't already exist, as you'll see later on)
 
 . Save the file
 
 . Within the same directory, create another file named `V1_1__AddInitialData.sql` with the following content:
-
++
 [source, sql]
 insert into INVENTORY (itemId, link, location, quantity) values ('329299', 'http://maps.google.com/?q=Raleigh', 'Raleigh', 736);
 insert into INVENTORY (itemId, link, location, quantity) values ('329199', 'http://maps.google.com/?q=Raleigh', 'Raleigh', 512);
@@ -77,7 +77,7 @@ insert into INVENTORY (itemId, link, location, quantity) values ('165954', 'http
 insert into INVENTORY (itemId, link, location, quantity) values ('444434', 'http://maps.google.com/?q=Raleigh', 'Raleigh', 443);
 insert into INVENTORY (itemId, link, location, quantity) values ('444435', 'http://maps.google.com/?q=Raleigh', 'Raleigh', 600);
 insert into INVENTORY (itemId, link, location, quantity) values ('444436', 'http://maps.google.com/?q=Tokyo', 'Tokyo', 230);
-
++
 This code initializes the data (if it doesn't already exist).
 
 . Save the file
@@ -92,7 +92,7 @@ code that is executed at startup.
 % mkdir src/main/java/com/redhat/coolstore/util
 
 . Within the directory, create a new Java class file named `DataBaseMigrationStartup.java` with the following content:
-
++
 [source, java]
 ----
 package com.redhat.coolstore.util;
@@ -128,14 +128,14 @@ public class DataBaseMigrationStartup {
 
 . Open `pom.xml` and add the following dependency below the other WildFly Swarm dependencies (look for the
 `<!-- Insert additional dependencies here -\->`):
-
++
 [source, xml]
         <dependency>
             <groupId>org.wildfly.swarm</groupId>
             <artifactId>flyway</artifactId>
         </dependency>
 
-Don't forget to save the file.
+. Don't forget to save the file.
 
 === Disable JPA schema operations
 
@@ -145,26 +145,26 @@ you are now using FlyWay, you must disable this JPA behavior.
 . Open `src/main/resources/META-INF/persistence.xml` in your IDE
 
 . Remove all `<properties>` and replace with a single property:
-
++
 [source, xml]
 <property name="javax.persistence.schema-generation.database.action" value="none"/>
 
 . Finally, remove the unneeded data initialization file:
-
++
 [source, sh]
 % rm src/main/resources/META-INF/load.sql
 
 === Deploy app
 
 . Create a new OpenShift project to house lab4:
-
++
 [source, bash]
 % oc new-project lab4-userXX
-
++
 Be sure to replace `userXX` with your username.
 
 . To re-deploy the application, execute:
-
++
 [source,bash]
 % mvn clean package fabric8:build fabric8:deploy
 
@@ -255,7 +255,7 @@ interfaces using Swagger. You will generate both in this exercise.
 === Add WildFly Swarm Swagger Fraction configuration
 
 . Create a new file in the existing directory `src/main/resources/META-INF` named `swarm.swagger.conf` with the following content:
-
++
 [source, properties]
 description: The API for our inventory service application
 license: Apache-2.0
@@ -263,11 +263,11 @@ title: Inventory Service brought to you by Red Hat Middleware
 version: 1.0
 packages: com.redhat.coolstore.rest
 root: /api
-
++
 This file defines some descriptive information for our API as a whole, along with an explicit declaration of which
 java package contains our services, and where they are served from. These values eventually get included in the JSON
 object output from the `swagger.json` endpoint you'll see soon.
-
++
 WARNING: Ensure there are no blank lines in this new file! This may cause errors during the processing of the file.
 
 === Add API Documentation annotations
@@ -278,7 +278,7 @@ code that implements the APIs.
 . Open `src/main/java/com/redhat/coolstore/rest/InventoryEndpoint.java` and add annotations to the
 class and `getAvailability()` method signature. You can simply copy/paste in the entire file below, or
 manually add the annotations.
-
++
 [source, java]
 ----
 package com.redhat.coolstore.rest;
@@ -336,11 +336,11 @@ public class InventoryEndpoint {
     }
 }
 ----
-
++
 Notice the use of the `@Api`, `@ApiParam` and `@ApiOperation` annotations. These are
 https://github.com/swagger-api/swagger-core/wiki/Annotations-1.5.X[special directives] to Swagger
 that it uses to create the documentation for the APIs.
-
++
 NOTE: There are several https://github.com/swagger-api/swagger-core/wiki/Annotations-1.5.X[more annotations] not used
 in this lab but might be useful in your projects.
 
@@ -350,18 +350,18 @@ On initialization of your application, Swagger will scan your APIs, generate doc
 and publish them to anyone who asks (by accessing the `/api/swagger.json` endpoint automatically created). Let's test it:
 
 . First re-deploy the application:
-
++
 [source,bash]
 % mvn clean package fabric8:build fabric8:deploy
 
 . Once the application is deployed and up and running, access the automatically created documentation endpoint.
 As usual, replace `HOSTNAME` with the name of the route's host discovered by `oc get route inventory`.
-
++
 [source, bash]
     % curl http://HOSTNAME/api/swagger.json
     {"swagger":"2.0","info":{"description":"The API for our inventory service application","version":"1.0"
     .... and a lot more stuff .....
-
++
 This is the raw description of your API that is consumable by other machines, like IDEs and generators.
 
 === Test the Swagger UI

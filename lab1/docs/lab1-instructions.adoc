@@ -191,10 +191,10 @@ dependencies it needs.
 To build an initial WildFly Swarm app:
 
 . Open the `pom.xml` file
-
++
 . Just after the end of the `<properties>...</properties>` section, add a new `<dependencyManagement>` section below the
 `<!-- Add dependency management here -\->` comment:
-
++
 [source, xml]
   <dependencyManagement>
     <dependencies>
@@ -208,11 +208,13 @@ To build an initial WildFly Swarm app:
     </dependencies>
   </dependencyManagement>
 
++
 . Within the `<build> -> <plugins>` section, add in the
 https://wildfly-swarm.gitbooks.io/wildfly-swarm-users-guide/content/getting-started/tooling/maven-plugin.html[WildFly Swarm Maven Plugin]
 as a new `<plugin>` element immediately after the existing `<plugin>...</plugin>` entry. Look for the `<!-- Add additional <plugin>..</plugin> here -\->` comment
 and add below it:
 
++
 [source, xml]
       <plugin>
         <groupId>org.wildfly.swarm</groupId>
@@ -229,9 +231,11 @@ and add below it:
 
 . Inside of the the `<properties>` section, below the `<!-- Add additional properties here -\->` line, add a new property and value:
 
++
 [source, xml]
     <version.wildfly.swarm>2017.8.1</version.wildfly.swarm>
 
++
 . Finally, you'll need to define the data source used by the app (this is normally done through your app server, but in this
 case you are running outside of a traditional Java EE App server, so you'll need to define it. Create a new file at
 `src/main/resources/project-defaults.yml` with the following content:
@@ -329,8 +333,7 @@ for them.
 . Replace the entire `<dependencies>...</dependencies>` section in `pom.xml` with the following content. Be sure
 you are NOT changing dependencies inside of the `<dependencyManagement>` section. Only replace the dependencies
 section near the end of the file, that originally contained the `javaee-api` dependency:
-
-
++
 [source, xml]
 ----
   <dependencies>
@@ -368,26 +371,29 @@ section near the end of the file, that originally contained the `javaee-api` dep
 
   </dependencies>
 ----
-
++
 By declaring explicit fractions, WildFly Swarm will not attempt to auto-detect. In addition, since we've removed
 the Java EE API dependency, modern Java IDEs will be able to detect missing fractions when you're developing new code.
 
++
 . Next, re-build the application:
-
++
 [source, bash]
 $ mvn clean package
 
-And re-run the project:
-
++
+. And re-run the project:
++
 [source, bash]
 % java -jar target/inventory-1.0.0-SNAPSHOT-swarm.jar
 
-And re-exercise the RESTful endpoint:
-
+. And re-exercise the RESTful endpoint:
++
 [source, json]
 % curl http://localhost:8080/api/inventory/329299
 {"itemId":"329299","location":"Raleigh","quantity":736,"link":"http://maps.google.com/?q=Raleigh"}
 
++
 The resulting Uberjar will most likely be virtually identical, as the fractions we are using have good autodetection functionality,
 and were detected earlier as well as being explicitly included now.
 

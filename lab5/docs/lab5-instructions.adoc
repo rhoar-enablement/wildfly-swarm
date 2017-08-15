@@ -82,7 +82,7 @@ The features implemented in this exercise require a couple of new Fraction depen
 
 . Open the store service's `store/pom.xml` file and add these dependencies, just below the existing Fraction
 dependencies (look for the `<!-- Add additional dependencies here -\->` comment):
-
++
 [source, xml]
         <dependency>
             <groupId>org.wildfly.swarm</groupId>
@@ -96,16 +96,16 @@ dependencies (look for the `<!-- Add additional dependencies here -\->` comment)
             <groupId>org.wildfly.swarm</groupId>
             <artifactId>ribbon</artifactId>
         </dependency>
-
++
 This adds the Topology API (`topology`), the https://www.consul.io/[Hashicorp Consul] implementation of that API (`topology-consul`),
 and the Netflix Ribbon integration (`ribbon`) which provides client-side load balancing.
-
++
 The inclusion of Ribbon also transitively brings in other dependencies like https://github.com/Netflix/Hystrix[Netflix Hystrix] which you will use
  later on.
 
 . Open the `inventory/pom.xml` file and add the same dependencies, plus one for `topology-webapp`, which will expose a
 JavaScript library for web developers to use when interfacing with the backend microservices:
-
++
 [source, xml]
         <dependency>
             <groupId>org.wildfly.swarm</groupId>
@@ -133,12 +133,12 @@ in a custom `main()` method, or you can do so declaratively using the `@org.wild
 
 . Open the `store/src/main/java/com/redhat/coolstore/rest/StoreEndpoint.java` file, and add the class-level annotation so that the
 top of the class definition looks like:
-
++
 [source, java]
   @Advertise("store")
   @Path("/store")
   public class StoreEndpoint {
-
++
 Notice the name used "store". This will be referenced later on and corresponds to the load-balanced name of the service that
 can be referenced by Ribbon/Consul clients to discover and load-balance across multiple instances of this service.
 
@@ -152,7 +152,7 @@ The _inventory_ service must be taught how to find and communicate with our new 
 
 . Create a new file `inventory/src/main/java/com/redhat/coolstore/service/StoreService.java` which will define how
 to find it, how to call it, and what to do when it's not working:
-
++
 [source, java]
 ----
 package com.redhat.coolstore.service;
@@ -180,12 +180,12 @@ public interface StoreService {
 }
 ----
 
-. `@ResourceGroup(name="store")` defines how to find the service
-. `Ribbon.from()` fetches a load balanced instance of the service for calling later on
-. `@Http` defines the API endpoint and template for use when calling the service
-. `@Hystrix` defines what to do when the service is unavailable (the _fallback_ behavior). You may get an error in your IDE
+* `@ResourceGroup(name="store")` defines how to find the service
+* `Ribbon.from()` fetches a load balanced instance of the service for calling later on
+* `@Http` defines the API endpoint and template for use when calling the service
+* `@Hystrix` defines what to do when the service is unavailable (the _fallback_ behavior). You may get an error in your IDE
 since you've not defined the `StoreServiceFallback.class` yet.
-. Finally, the Java API for calling the service is declared.
+* Finally, the Java API for calling the service is declared.
 
 TIP: Notice the use of Ribbon-specific and `io.netty` classes. These implement load balancing and
 asynchronous event-driven calling of APIs. For more information on how asynchronous method calls
@@ -204,7 +204,7 @@ performance applications that can handle significant loads without loss of servi
 . Open the `inventory/src/main/java/com/redhat/coolstore/rest/InventoryEndpoint.java` file
 
 . Change the implemention to the below:
-
++
 [source, java]
 ----
 package com.redhat.coolstore.rest;
@@ -286,12 +286,12 @@ public class InventoryEndpoint {
 }
 ----
 
-. The `@Advertise` annotation causes the service to be advertised via Ribbon/Consul.
-. In the `getAvailability()` method, we first get the inventory item from the database as before.
-. Next, the `storesClosed()` API is called to determine whether the store holding the inventory is open or closed.
-. This is method call goes through Ribbon to call the other service (the _store_ service) through an asynchronous invocation (using the _Observable_ pattern and JAX-RS's http://docs.oracle.com/javaee/7/api/javax/ws/rs/container/AsyncResponse.html[AsyncResponse] API.
-. If the call is successful, the `(result)` function is called, which parses the result and adds STORE IS OPEN / STORE IS CLOSED messaging to the inventory object.
-. If the call fails, then through the use of Hystrix, the fallback mechanism is called which you will define next.
+* The `@Advertise` annotation causes the service to be advertised via Ribbon/Consul.
+* In the `getAvailability()` method, we first get the inventory item from the database as before.
+* Next, the `storesClosed()` API is called to determine whether the store holding the inventory is open or closed.
+* This is method call goes through Ribbon to call the other service (the _store_ service) through an asynchronous invocation (using the _Observable_ pattern and JAX-RS's http://docs.oracle.com/javaee/7/api/javax/ws/rs/container/AsyncResponse.html[AsyncResponse] API.
+* If the call is successful, the `(result)` function is called, which parses the result and adds STORE IS OPEN / STORE IS CLOSED messaging to the inventory object.
+* If the call fails, then through the use of Hystrix, the fallback mechanism is called which you will define next.
 
 TIP: For more information on high performance application design and Java, see the https://dzone.com/articles/javautilconcurrentfuture[DZone article on Java Futures].
 
@@ -302,7 +302,7 @@ be _short-circuited_, allowing the service time to recover before being accessed
 and any calls to it are short-circuited to the _fallback_ mechanism. Define the fallback for this lab:
 
 . Create a new file `inventory/src/main/java/com/redhat/coolstore/service/StoreServiceFallback.java` with the fallback logic:
-
++
 [source, java]
 ----
 package com.redhat.coolstore.service;
@@ -341,7 +341,7 @@ public class StoreServiceFallback implements FallbackHandler<ByteBuf> {
     }
 }
 ----
-
++
 This simple fallback will generate a valid response as though the call to the Store service worked, but it will always
 indicate that the store is closed. This will allow normal application behavior, and not require any special error handling
 in the application making the call to our services.
@@ -379,18 +379,20 @@ This will execute the Consul server and expose its port 8500 to other applicatio
 
 . Open another terminal window and run the store service. Note that you must bind to a real IP address for discovery purposes,
 so make note of the use of `swarm.bind.address`.
-
++
 [source, bash]
 ----
 % cd store; mvn clean wildfly-swarm:run -Dswarm.bind.address=127.0.0.1
 ----
 
 . You should see the Store service come up and register itself with Consul/Ribbon:
++
 ----
 2017-08-01 17:34:21,671 INFO  [org.wildfly.swarm.topology.consul.runtime.Advertiser] (MSC service thread 1-4) Registered service store:127.0.0.1:8080
 ----
 
 . You should also see output from Consul, such as:
++
 ----
     2017/08/01 21:34:21 [DEBUG] agent: Check 'service:store:127.0.0.1:8080' in sync
     2017/08/01 21:34:21 [DEBUG] http: Request GET /v1/catalog/services?wait=60s&index=5 (1.19100631s) from=172.17.0.1:58790
@@ -399,51 +401,54 @@ so make note of the use of `swarm.bind.address`.
     2017/08/01 21:34:21 [DEBUG] http: Request PUT /v1/agent/service/register (3.515784ms) from=172.17.0.1:58794
     2017/08/01 21:34:21 [DEBUG] agent: Service 'store:127.0.0.1:8080' in sync
 ----
-
++
 . Quickly test the store endpoint to ensure it is working:
-
++
 [source, bash]
 % curl http://localhost:8080/api/store/raleigh
 {"location":"raleigh","open":false,"address":" === STORE INSTANCE:4030 === "}
-
++
 Due to the logic in the `StoreEndpoint` class, any store named `Raleigh` (or `raleigh` or `RaLeIgH`) will be deemed
 `CLOSED` (`"open":false` in the output). All other stores are `OPEN`. What's up with Raleigh??
-
++
 Also note the IP address and endpoint information is included in the address of the store (in this case a random number
 generated once per store). We will use this in the next section to observe changing addresses when load balancing.
 
 . Open another terminal window and run the inventory service:
-
++
 [source, bash]
 $ cd inventory; mvn clean wildfly-swarm:run -Dswarm.bind.address=127.0.0.1 -Dswarm.port.offset=1
-
++
 Notice the use of `swarm.port.offset`. Since the _store_ service is already running on port `8080`, we must tell Swarm
-to move all ports, so that using an offset of `1` means that our _inventory_ service will be accessible on port `8081`. Test it out:
+to move all ports, so that using an offset of `1` means that our _inventory_ service will be accessible on port `8081`.
 
+. Test it out:
++
 [source, bash]
 % curl http://localhost:8081/api/inventory/329299
 {"itemId":"329299","location":"Raleigh [STORE IS CLOSED inventory:http://localhost:8081/api/ store:http://127.0.0.1/api/store/Raleigh,10.16.196.131]","quantity":736,"link":"http://maps.google.com/?q=Raleigh"}
++
+Yep, Raleigh still closed.
 
-Now test it again for a different product in _Tokyo_:
-
+. Now test it again for a different product in _Tokyo_:
++
 [source, bash]
 % curl http://localhost:8081/api/inventory/444436
 {"itemId":"329299","location":"Raleigh [STORE IS CLOSED store: === STORE INSTANCE:7168 === ]","quantity":736,"link":"http://maps.google.com/?q=Raleigh"}
-
++
 Indeed, only Raleigh is closed. Notice the store instance ID (`7168` in this example) is the same, indicating the inventory
 service is using our single instance of the store service.
 
 == Run another instance
 
-To test the load balancing capabilities of WildFly Swarm, open yet another terminal window and run a second copy of the _store_ runtime
+. To test the load balancing capabilities of WildFly Swarm, open yet another terminal window and run a second copy of the _store_ runtime
 using a port offset of `2` (so that the service ends up running on port `8082`):
-
++
 [source, bash]
 % cd store; mvn wildfly-swarm:run -Dswarm.bind.address=127.0.0.1 -Dswarm.port.offset=2
-
++
 After this command is run, we'll have the following services running:
-
-
++
 |===
 |Service|Port
 
@@ -458,13 +463,12 @@ After this command is run, we'll have the following services running:
 |8081
 
 |===
-
++
 TIP: Consul also includes a built-in web console for visualizing the various services that can be discovered. Visit
 `http://localhost:8500` in your browser to see the console: image:images/consul.png[]
 
-
 . Repeatedly call the Inventory service, and observe the load balancing by seeing that the `STORE INSTANCE` of the store service is different across invocations:
-
++
 [source, bash]
 % for i in 1 2 3 4 5 ; do curl http://localhost:8081/api/inventory/329299 ; echo ; done
   {"itemId":"329299","location":"Raleigh [STORE IS CLOSED store: === STORE INSTANCE:7168 === ]","quantity":736,"link":"http://maps.google.com/?q=Raleigh"}
@@ -475,19 +479,19 @@ TIP: Consul also includes a built-in web console for visualizing the various ser
 
 == Break the circuit
 
-To test the circuit breaking capability, carefully stop both instances of the _store_ service (press CTRL-C in the terminals
-in which they run).
+. To test the circuit breaking capability, carefully stop both instances of the _store_ service (press CTRL-C in the terminals
+in which they run). Careful! Only stop the _store_ service (not the _inventory_ service).
 
-Once they both stop, re-attempt to access the _inventory_ service. Because the _store_ service has failed, the fallback mechanism will
+. Once they both stop, re-attempt to access the _inventory_ service. Because the _store_ service has failed, the fallback mechanism will
 kick in and you should see this in the message returned:
-
++
 [source, bash]
 % curl http://localhost:8081/api/inventory/444436
 {"itemId":"444436","location":"Tokyo [STORE IS CLOSED store:FALLBACK]","quantity":230,"link":"http://maps.google.com/?q=Tokyo"}
-
++
 Notice that all stores are `CLOSED` (we used `Tokyo` instead of `Raleigh`) and the address of the store is `FALLBACK`.
 
-Restart one of the stopped _store_ services. After about 30 seconds, retry the _inventory_ service again, and the fallback should no longer be used.
+. Restart one of the stopped _store_ services. After about 30 seconds, retry the _inventory_ service again, and the fallback should no longer be used.
 
 [TIP]
 ====
@@ -528,89 +532,91 @@ dependency for each should look like:
 That's all there is to it. No code changes whatsoever! To deploy to OpenShift:
 
 . Make sure you're logged in:
-
++
 [source, bash]
 % oc login https://console.training.rhmw.org:8443 -u USER -p PASS
-
++
 Be sure to replace `USER` and `PASS` with your supplied credentials and accept any security exceptions (which is never
 a good idea in a production scenario, but is fine for this lab).
-
++
 You should get a `Login successful` message indicating you've successfully logged in.
 
 . Create a new project to house your new services:
-
++
 [source, bash]
 % oc new-project lab5-userXX
-
++
 Be sure to replace `userXX` with your username.
 
 . The WildFly Swarm `topology-openshift` fraction needs permission to be able to access the cluster
 information from OpenShift. To enable this permission in your new project, execute the following:
-
++
 [source, bash]
 % oc policy add-role-to-user view system:serviceaccount:$(oc project -q):default -n $(oc project -q)
-
++
 This ensures that the default service account for this project has the cluster `view` permission, enabling the fraction
 to subscribe to and act on services coming and going.
 
 . Deploy the _store_ service:
-
++
 [source, bash]
 % cd store; mvn clean package fabric8:build fabric8:deploy
 
 . Retrieve the route hostname to the _store_service:
-
++
 [source, bash]
 % oc get route store
 NAME      HOST/PORT                           PATH      SERVICES   PORT      TERMINATION   WILDCARD
 store     store-lab5.apps.127.0.0.1.nip.io              store      8080                    None
 
 . And test it:
-
++
 [source, bash]
+----
 % curl http://HOSTNAME/api/store/raleigh
 {"location":"raleigh","open":false,"address":" === STORE INSTANCE:1189 === "}
-
+----
++
 Be sure to replace `HOSTNAME` with your actual hostname from the `oc get route` command.
 
 . Deploy the _inventory_ service:
-
++
 [source, bash]
 % cd inventory; mvn clean package fabric8:build fabric8:deploy
 
 . Retrieve the route hostname to the _inventory_ service:
-
++
 [source, bash]
 % oc get route inventory
 NAME        HOST/PORT                             PATH      SERVICES    PORT      TERMINATION   WILDCARD
 inventory   inventory-lab5.apps.127.0.0.1.nip.io            inventory   8080                    None
 
 . Exercise the _inventory_ service:
-
++
 [source, bash]
 % curl http://HOSTNAME/api/inventory/329299
 {"itemId":"329299","location":"Raleigh [STORE IS CLOSED store: === STORE INSTANCE:1189 === ]","quantity":736,"link":"http://maps.google.com/?q=Raleigh"}
-
++
 Be sure to replace `HOSTNAME` with your actual hostname from the `oc get route` command.
 
 == Test the circuit breaker in OpenShift
 
 . To test the circuit breaker within OpenShift, scale the _store_ service to 0 using the GUI or the CLI:
-
++
 [source, bash]
 % oc scale --replicas=0 dc/store
 
 . Re-test the _inventory_ service to witness the fallback execution:
-
++
 [source, bash]
 % curl http://HOSTNAME/api/inventory/329299
 {"itemId":"329299","location":"Raleigh [STORE IS CLOSED store:FALLBACK]","quantity":736,"link":"http://maps.google.com/?q=Raleigh"}
 
 . Scale the services to 2 pods:
-
++
 [source, bash]
 % oc scale --replicas=2 dc/inventory dc/store
-
++
 After all store pods are up (watch the OpenShift web console), repeatedly test the _inventory_ service to ensure that the fallback is not employed
 and that the automatic load balancing causes requests to be sent to all of the _store_ service instances
 by watching the `STORE INSTANCE:` reported by the _store_ service's `address` field in the returned JSON object.
