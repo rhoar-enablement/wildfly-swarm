@@ -65,15 +65,18 @@ For production use, you will use Postgres. To create a new production configurat
 
 . Copy the existing `project-defaults.yml` to a new file named `project-production.yml` in the same directory (`src/main/resources`)
 
-. Open the file in the IDE and change the `data-sources` section to read:
+. Open the file in the IDE and replace its contents with:
 [source, yaml]
+swarm:
+  logging: INFO
+  datasources:
     data-sources:
       InventoryDS:
         driver-name: postgresql
         connection-url: jdbc:postgresql://inventory-database:5432/inventory
         user-name: swarm
         password: password
-
+        
 . Save the file
 
 CAUTION: YAML files are sensitive to indentation level for each line, so be sure to maintain the indentation
