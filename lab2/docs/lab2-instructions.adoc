@@ -257,8 +257,6 @@ This provides a remote Linux shell into the container running the database. To d
     % psql -h localhost --username=$POSTGRESQL_USER -c \
         'select * from INVENTORY' inventory
 
-    Password for user swarm: password
-
      itemid |               link                | location | quantity
     --------+-----------------------------------+----------+----------
      329299 | http://maps.google.com/?q=Raleigh | Raleigh  |      736
