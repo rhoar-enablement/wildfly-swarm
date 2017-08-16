@@ -82,48 +82,6 @@ This code initializes the data (if it doesn't already exist).
 
 . Save the file
 
-=== Add initialization code
-
-To cause FlyWay to activate and apply migrations to the database when the app is started, you'll need to add some
-code that is executed at startup.
-
-. Create a new directory `src/main/java/com/redhat/coolstore/util/`:
-[source, bash]
-% mkdir src/main/java/com/redhat/coolstore/util
-
-. Within the directory, create a new Java class file named `DataBaseMigrationStartup.java` with the following content:
-+
-[source, java]
-----
-package com.redhat.coolstore.util;
-
-import org.flywaydb.core.Flyway;
-import javax.annotation.PostConstruct;
-import javax.ejb.Singleton;
-import javax.ejb.Startup;
-
-@Singleton
-@Startup
-public class DataBaseMigrationStartup {
-
-    @PostConstruct
-    private void startup() {
-        System.out.println("-------- STARTING DATABASE MIGRATION");
-
-        Flyway flyway = new Flyway();
-
-        String dbConnUrl = System.getProperty("swarm.datasources.data-sources.InventoryDS.connection-url");
-        String dbUser = System.getProperty("swarm.datasources.data-sources.InventoryDS.user-name");
-        String dbPassword = System.getProperty("swarm.datasources.data-sources.InventoryDS.password");
-        flyway.setDataSource(dbConnUrl, dbUser, dbPassword);
-
-        flyway.migrate();
-
-        System.out.println("--------- DATABASE MIGRATION DONE");
-    }
-}
-----
-
 === Add the Fraction Dependency
 
 . Open `pom.xml` and add the following dependency below the other WildFly Swarm dependencies (look for the
