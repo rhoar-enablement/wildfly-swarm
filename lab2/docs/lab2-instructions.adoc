@@ -254,7 +254,7 @@ This provides a remote Linux shell into the container running the database. To d
 `psql` utility (you'll need to type in the password manually when prompted. The password is `password`):
 
 ----
-    % psql -h $HOSTNAME --username=$POSTGRESQL_USER -c \
+    % psql -h localhost --username=$POSTGRESQL_USER -c \
         'select * from INVENTORY' inventory
 
     Password for user swarm: password
