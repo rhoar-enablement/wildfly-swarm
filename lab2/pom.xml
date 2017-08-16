@@ -49,9 +49,10 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
-    </dependencies>
 
     <!-- Add additional dependency management here -->
+
+    </dependencies>
 
   </dependencyManagement>
 
