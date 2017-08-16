@@ -144,8 +144,8 @@ In future versions of the plugin this may happen automatically, but for now we w
 . Add version information to the `<properties>` section at the top of the file for both Fabric8 and the Fabric8 Maven Plugin,
 below the `<!-- Add additional properties here -\->` comment:
 [source, xml]
-<fabric8.version>2.2.205</fabric8.version>
-<fabric8.maven.plugin.version>3.5.1</fabric8.maven.plugin.version>
+<fabric8.version>2.3.4</fabric8.version>
+<fabric8.maven.plugin.version>3.5.19</fabric8.maven.plugin.version>
 
 . Save the file.
 
@@ -254,10 +254,8 @@ This provides a remote Linux shell into the container running the database. To d
 `psql` utility (you'll need to type in the password manually when prompted. The password is `password`):
 
 ----
-    % psql -h $HOSTNAME --username=$POSTGRESQL_USER -c \
+    % psql -h localhost --username=$POSTGRESQL_USER -c \
         'select * from INVENTORY' inventory
-
-    Password for user swarm: password
 
      itemid |               link                | location | quantity
     --------+-----------------------------------+----------+----------
